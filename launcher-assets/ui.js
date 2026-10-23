@@ -5,13 +5,19 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
      an HTA (Internet Explorer engine). The sign-in is remembered as the server's device token in
      %APPDATA%\DBRevamped\launcher-session.txt. Play trades it for a one-time launch code and
      opens the game with it, so the game signs itself in and opens on the player's characters. */
-  var SWF=HOST+"/p/cbp/DungeonBlitz.swf";
-  var HEALTH=HOST+"/api/auth/discord/config";
-  var API_CREATE=HOST+"/api/account/create";
-  var API_LOGIN=HOST+"/api/auth/launcher/password-login";
-  var API_PLAY=HOST+"/api/auth/launcher/play";
-  var API_FORGET=HOST+"/api/auth/launcher/forget";
-  var FORGOT_URL=HOST+"/lostpw";
+  /* Passwords, tokens and launch codes only ever travel over HTTPS. The game itself is loaded
+     over plain http: Flash will not let an https game read its http files. A local test server
+     (localhost) has no certificate, so it stays on http. */
+  var LOCAL_HOST=/^https?:\/\/(localhost|127\.0\.0\.1)(:|\/|$)/i.test(HOST);
+  var SECURE_HOST=LOCAL_HOST?HOST:HOST.replace(/^http:/i,'https:');
+  var PLAIN_HOST=HOST.replace(/^https:/i,'http:');
+  var SWF=PLAIN_HOST+"/p/cbp/DungeonBlitz.swf";
+  var HEALTH=SECURE_HOST+"/api/auth/discord/config";
+  var API_CREATE=SECURE_HOST+"/api/account/create";
+  var API_LOGIN=SECURE_HOST+"/api/auth/launcher/password-login";
+  var API_PLAY=SECURE_HOST+"/api/auth/launcher/play";
+  var API_FORGET=SECURE_HOST+"/api/auth/launcher/forget";
+  var FORGOT_URL=SECURE_HOST+"/lostpw";
   var serverUp=false, busy=false, view='signin', session=null;
   try{ var ar=1280/690; var W=Math.min(1120,screen.availWidth-24); var H=Math.round((W-16)/ar+38);
        if(H>screen.availHeight-24){ H=screen.availHeight-24; W=Math.round((H-38)*ar+16); }
@@ -148,9 +154,9 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
   try{ var sh=new ActiveXObject('WScript.Shell'); SESSION_DIR=sh.ExpandEnvironmentStrings('%APPDATA%')+'\\DBRevamped'; SESSION_FILE=SESSION_DIR+'\\launcher-session.txt'; }catch(e){}
   function loadSession(){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!SESSION_FILE||!fso.FileExists(SESSION_FILE)) return null;
       var ts=fso.OpenTextFile(SESSION_FILE,1,false,-1); var txt=ts.ReadAll(); ts.Close(); var parts=txt.split('\n');
-      if(parts.length>=3&&parts[0]==HOST&&parts[1]&&parts[2]) return {email:parts[1],token:parts[2].replace(/\s+$/,'')}; }catch(e){} return null; }
+      if(parts.length>=3&&(parts[0]==SECURE_HOST||parts[0]==PLAIN_HOST)&&parts[1]&&parts[2]) return {email:parts[1],token:parts[2].replace(/\s+$/,'')}; }catch(e){} return null; }
   function saveSession(s){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!fso.FolderExists(SESSION_DIR)) fso.CreateFolder(SESSION_DIR);
-      var ts=fso.CreateTextFile(SESSION_FILE,true,true); ts.Write(HOST+'\n'+s.email+'\n'+s.token); ts.Close(); }catch(e){} }
+      var ts=fso.CreateTextFile(SESSION_FILE,true,true); ts.Write(SECURE_HOST+'\n'+s.email+'\n'+s.token); ts.Close(); }catch(e){} }
   function clearSession(){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(SESSION_FILE&&fso.FileExists(SESSION_FILE)) fso.DeleteFile(SESSION_FILE,true); }catch(e){} }
 
   function signIn(email,password,onDone){

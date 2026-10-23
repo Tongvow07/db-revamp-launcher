@@ -15,7 +15,7 @@
 /* Thin, stable shell. The real UI lives in ui.js on the server, so updates reach every
    player automatically with no re-download. A local copy under launcher-assets/ is the
    offline fallback. The shell never needs changing. */
-var HOST="http://dungeonblitzv.duckdns.org";
+var HOST="https://dungeonblitzv.duckdns.org";
 var UI_URL=HOST+"/launcher/ui.js";
 function newXhr(){ try{return new ActiveXObject("MSXML2.ServerXMLHTTP.6.0");}catch(e){try{return new ActiveXObject("MSXML2.ServerXMLHTTP");}catch(e2){return new ActiveXObject("Microsoft.XMLHTTP");}} }
 function hereDir(){ var p=decodeURIComponent(window.location.pathname).replace(/^\/+/,'').replace(/\//g,'\\'); var i=p.lastIndexOf('\\'); return i>0?p.substring(0,i):'.'; }
