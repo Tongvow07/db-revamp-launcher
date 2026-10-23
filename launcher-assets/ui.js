@@ -7,87 +7,11 @@ var IMG_PALADIN="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJ0AAACqCAYAAAC3W
   var HEALTH=HOST+"/api/auth/discord/config";
   var API=HOST+"/api/account/create";
   var serverUp=false;
-  try{ var W=Math.min(1040,screen.availWidth-24), H=Math.min(650,screen.availHeight-24);
+  try{ var W=Math.min(1060,screen.availWidth-24), H=Math.min(700,screen.availHeight-24);
        window.resizeTo(W,H); window.moveTo(Math.max(0,(screen.width-W)/2), Math.max(0,(screen.availHeight-H)/2)); }catch(e){}
 
-  var css=''
-+'@font-face{font-family:"Averia Serif Libre";font-weight:400;src:url(launcher-assets/fonts/averia-serif-libre.eot)}'
-+'@font-face{font-family:"Vollkorn SC";font-weight:400;src:url(launcher-assets/fonts/vollkorn-sc.eot)}'
-+'*{box-sizing:border-box;margin:0;padding:0}'
-+'html,body{height:100%;overflow:hidden}'
-+'body{background:#11182b;color:#f6efe1;font-family:"Vollkorn SC",Georgia,serif;font-size:13px;-ms-user-select:none}'
-+'.bgimg{position:fixed;left:0;top:0;width:100%;height:100%;z-index:0}'
-+'.ov{position:fixed;left:0;top:0;right:0;bottom:0;z-index:1;pointer-events:none;background:linear-gradient(180deg,rgba(6,8,16,.5) 0%,rgba(6,8,16,.18) 24%,rgba(6,8,16,.42) 60%,rgba(4,5,10,.82) 100%);box-shadow:inset 0 0 130px rgba(0,0,0,.6)}'
-/* outer metallic bezel */
-+'.bezel{position:fixed;left:0;top:0;right:0;bottom:0;z-index:2;pointer-events:none;border:7px solid #15110c;box-shadow:inset 0 0 0 2px rgba(120,86,40,.5),inset 0 0 26px rgba(0,0,0,.7)}'
-+'.page{position:relative;z-index:3;width:100%;height:100%}'
-/* top bar */
-+'.topbar{position:absolute;left:0;right:0;top:0;height:112px}'
-+'.port{position:absolute;top:16px;width:84px;height:84px;border-radius:50%;overflow:hidden;background:#140f09;border:4px solid rgba(240,190,96,.85);box-shadow:0 5px 16px rgba(0,0,0,.65),inset 0 0 10px rgba(0,0,0,.6)}'
-+'.port.l{left:26px}.port.r{right:26px}'
-+'.port img{position:absolute;left:50%;width:142px;height:auto;margin-left:-71px;top:-2px}'
-+'.port .pfade{position:absolute;left:0;right:0;bottom:0;height:34px;background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.6))}'
-+'.title{position:absolute;left:50%;top:14px;width:560px;margin-left:-280px;text-align:center}'
-+'.title h1{font-family:"Averia Serif Libre",Georgia,serif;font-weight:400;font-size:40px;line-height:1;letter-spacing:3px;color:#f3d79a;text-shadow:0 3px 0 #5a3d12,0 5px 18px rgba(0,0,0,.85),0 0 22px rgba(243,195,67,.25)}'
-+'.title h2{font-family:"Averia Serif Libre",Georgia,serif;font-weight:400;font-size:22px;line-height:1;letter-spacing:9px;color:#e6a94b;margin-top:5px;text-shadow:0 2px 0 #4a2f0c,0 3px 12px rgba(0,0,0,.8)}'
-+'.title .rule{margin-top:7px;color:#caa24e;font-size:13px;letter-spacing:4px;text-shadow:0 1px 3px #000}'
-/* status + db tools */
-+'.status{position:absolute;right:120px;top:22px;font-size:12px;color:#f3ead6;text-shadow:0 1px 3px #000;letter-spacing:.08em}'
-+'.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:#b04a4a;box-shadow:0 0 7px #b04a4a}.dot.up{background:#78d08a;box-shadow:0 0 9px #78d08a}.dot.wait{background:#e6c684}'
-+'.tools{position:absolute;right:120px;top:46px}'
-+'.toolsbtn{cursor:pointer;padding:7px 12px;background:rgba(18,14,9,.9);border:2px solid #b78a2e;border-radius:5px;color:#f0c868;font-family:"Vollkorn SC",Georgia,serif;font-size:12px;letter-spacing:.1em;text-transform:uppercase;box-shadow:0 2px 7px rgba(0,0,0,.5)}'
-+'.toolsbtn:hover{border-color:#f0d08f;color:#ffe3a0}'
-+'.menu{display:none;position:absolute;right:0;top:36px;width:184px;background:rgba(16,12,8,.97);border:2px solid #b78a2e;border-radius:6px;box-shadow:0 10px 26px rgba(0,0,0,.6);overflow:hidden}'
-+'.menu.open{display:block}'
-+'.menu a{display:block;padding:9px 13px;color:#e8cf95;font-size:12px;letter-spacing:.04em;cursor:pointer;border-bottom:1px solid rgba(120,86,40,.3)}'
-+'.menu a:last-child{border-bottom:none}.menu a:hover{background:rgba(240,200,104,.14);color:#fff}'
-/* center panel */
-+'.panel{position:absolute;left:50%;top:120px;width:470px;margin-left:-235px;padding:20px 26px 22px;background:rgba(14,11,7,.9);border:3px solid rgba(203,162,78,.9);border-radius:12px;box-shadow:0 16px 46px rgba(0,0,0,.65),inset 0 0 14px rgba(0,0,0,.75),inset 0 1px 0 rgba(255,225,160,.15)}'
-+'.ribbon{position:absolute;left:50%;top:-12px;margin-left:-82px;width:164px;text-align:center;padding:3px 0;background:linear-gradient(180deg,#f0c868,#c2922f);color:#2a1e08;font-size:10px;letter-spacing:.18em;text-transform:uppercase;font-weight:bold;border-radius:0 0 5px 5px;box-shadow:0 2px 6px rgba(0,0,0,.5)}'
-+'.ptitle{font-family:"Averia Serif Libre",Georgia,serif;font-size:22px;color:#f3d79a;text-align:center;margin-top:4px;text-shadow:0 2px 3px #000}'
-+'.pdiv{height:2px;width:160px;margin:6px auto 12px;background:linear-gradient(90deg,rgba(203,162,78,0),rgba(203,162,78,.9),rgba(203,162,78,0))}'
-+'.sl{font-family:"Averia Serif Libre",Georgia,serif;font-size:12px;min-height:16px;text-align:center;margin-bottom:9px;color:#f3ead6}.sl.ok{color:#9bdc98}.sl.err{color:#ff8b7f}'
-+'.field{margin-bottom:11px}.field label{display:block;font-size:10px;letter-spacing:.12em;color:#e2c98f;text-transform:uppercase;margin-bottom:4px;font-weight:bold}'
-+'.field input{width:100%;padding:10px 12px;font-size:15px;color:#fff;background:rgba(0,0,0,.62);border:1px solid rgba(203,162,78,.55);border-radius:5px}'
-+'.field input:focus{outline:none;border-color:#f0d08f;background:rgba(0,0,0,.78)}'
-+'.btn{display:block;width:100%;cursor:pointer;text-align:center;text-transform:uppercase;letter-spacing:.07em;border-radius:6px;padding:12px;font-size:15px;margin-top:12px;font-family:"Averia Serif Libre",Georgia,serif}'
-+'.btn.gold{color:#2a1e08;border:2px solid #fff3cd;background:linear-gradient(180deg,#f9d066 0%,#d49d2f 50%,#8e5a0d 100%);box-shadow:0 4px 9px rgba(0,0,0,.45),inset 0 1px 2px rgba(255,255,255,.45);text-shadow:0 1px 1px rgba(255,255,255,.4)}'
-+'.btn.gold:hover{background:linear-gradient(180deg,#ffdd7e 0%,#e0ad3f 50%,#9c6410 100%)}'
-+'.btn.bronze{color:#ffe9d6;border:2px solid #dfa27e;background:linear-gradient(180deg,#b06e43 0%,#7e4624 50%,#461f07 100%);box-shadow:0 4px 9px rgba(0,0,0,.45),inset 0 1px 2px rgba(255,255,255,.2);text-shadow:0 1px 2px rgba(0,0,0,.8)}'
-+'.btn.bronze:hover{background:linear-gradient(180deg,#c47e50 0%,#8d5129 50%,#52260b 100%)}'
-/* footer */
-+'.footer{position:absolute;left:0;right:0;bottom:0;height:34px;line-height:34px;padding:0 20px;font-size:11px;color:#cdbb95;letter-spacing:.05em;background:rgba(8,6,4,.55);border-top:1px solid rgba(120,86,40,.35)}'
-+'.footer .fl{float:left}.footer .fr{float:right}'
-+'.footer .on{color:#8fe0a0;font-weight:bold}.footer .off{color:#e58a7f;font-weight:bold}';
-
-  var html=''
-+'<img class="bgimg" src="launcher-assets/background.png"/><div class="ov"></div><div class="bezel"></div>'
-+'<div class="page">'
-+'<div class="topbar">'
-+'<div class="port l"><img src="'+IMG_PALADIN+'"/><div class="pfade"></div></div>'
-+'<div class="title"><h1>DUNGEON BLITZ</h1><h2>REVAMP</h2><div class="rule">&#9670; &#9552;&#9552;&#9552;&#9552; &#9876; &#9552;&#9552;&#9552;&#9552; &#9670;</div></div>'
-+'<div class="status"><i id="dot" class="dot wait"></i><span id="stxt">checking...</span></div>'
-+'<div class="tools"><div class="toolsbtn" onclick="toggleTools(event)">&#9881; DB TOOLS &#9660;</div>'
-+'<div class="menu" id="tmenu">'
-+'<a onclick="dbTool()">&#128737; Gear Library</a>'
-+'<a onclick="dbTool()">&#128202; Stat Calculator</a>'
-+'<a onclick="dbTool()">&#128302; Item Spawner</a>'
-+'<a onclick="dbTool()">&#9881; Mod Panel</a>'
-+'</div></div>'
-+'<div class="port r"><img src="'+IMG_ROGUE+'"/><div class="pfade"></div></div>'
-+'</div>'
-+'<div class="panel">'
-+'<div class="ribbon">Registration</div>'
-+'<div class="ptitle">Create Your Account</div><div class="pdiv"></div>'
-+'<div class="sl" id="sl"></div>'
-+'<div class="field"><label>Email</label><input id="email" type="text" autocomplete="off"/></div>'
-+'<div class="field"><label>Password</label><input id="pw" type="password"/></div>'
-+'<div class="field"><label>Confirm Password</label><input id="cpw" type="password"/></div>'
-+'<div class="btn gold" onclick="doRegister()">Create Account</div>'
-+'<div class="btn bronze" onclick="doPlay()">Launch Game</div>'
-+'</div>'
-+'<div class="footer"><span class="fl">Server Status: <span id="fstat" class="off">OFFLINE</span></span><span class="fr">DB Revamped Launcher v1.1</span></div>'
-+'</div>';
+  var css="@font-face{font-family:\"Averia Serif Libre\";font-weight:400;src:url(launcher-assets/fonts/averia-serif-libre.eot)}\n@font-face{font-family:\"Vollkorn SC\";font-weight:400;src:url(launcher-assets/fonts/vollkorn-sc.eot)}\n*{box-sizing:border-box;margin:0;padding:0;user-select:none;-ms-user-select:none}\nhtml,body{width:100%;height:100%;overflow:hidden;background-color:#0d0b09;font-family:\"Averia Serif Libre\",\"Palatino Linotype\",\"Book Antiqua\",Georgia,serif;color:#f5e6c8}\n.launcher-canvas{position:relative;width:100%;height:100%;background-image:url(launcher-assets/background.png);background-size:cover;background-position:center center;background-repeat:no-repeat;box-shadow:inset 0 0 80px rgba(0,0,0,.75)}\n.top-vignette{position:absolute;top:0;left:0;right:0;height:180px;background:linear-gradient(180deg,rgba(10,12,8,.65) 0%,rgba(10,12,8,.25) 60%,rgba(10,12,8,0) 100%);pointer-events:none}\n.header-cluster{position:absolute;top:14px;left:50%;width:780px;height:175px;margin-left:-390px;z-index:10}\n.medallion{position:absolute;top:12px;width:134px;height:134px;border-radius:50%;padding:6px;background:linear-gradient(135deg,#fbe296 0%,#c8963e 35%,#6e4812 70%,#e5b95c 100%);box-shadow:0 8px 20px rgba(0,0,0,.85),inset 0 2px 3px rgba(255,255,255,.6);z-index:12}\n.medallion-left{left:0}\n.medallion-right{right:0}\n.medallion-inner-ring{width:100%;height:100%;border-radius:50%;padding:5px;background:linear-gradient(180deg,#2b1d0c 0%,#593d18 50%,#1c1206 100%);border:2px dashed #d4a349;box-shadow:inset 0 0 8px #000}\n.medallion-viewport{width:100%;height:100%;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 50% 35%,#2a332d 0%,#0d110f 85%);border:2px solid #b58532;position:relative}\n.medallion-viewport img{width:135%;height:135%;margin-left:-17%;margin-top:-6%}\n.logo-crest{position:absolute;top:0;left:115px;width:550px;height:175px;z-index:11;pointer-events:none}\n.db-tools-wrapper{position:absolute;top:32px;right:28px;width:176px;z-index:30}\n.db-tools-trigger{position:relative;width:176px;cursor:pointer;text-align:center}\n.db-tools-emblem{width:120px;height:54px;margin:0 auto -12px auto;position:relative;z-index:2;display:block}\n.db-tools-plaque{position:relative;z-index:3;height:38px;line-height:32px;background:linear-gradient(180deg,#3a3028 0%,#231c16 50%,#16110d 100%);border:3px solid #b88b3a;border-radius:6px;box-shadow:0 6px 14px rgba(0,0,0,.85),inset 0 1px 2px rgba(255,230,160,.35);color:#f3d486;font-size:15px;font-weight:bold;letter-spacing:1.5px;text-shadow:0 2px 3px #000}\n.db-tools-trigger:hover .db-tools-plaque{border-color:#f5cc70;color:#fff2c2}\n.db-tools-arrow{font-size:11px;color:#d69f3a;margin-left:6px}\n.db-tools-bottom-shield{width:64px;height:16px;margin:-2px auto 0 auto;display:block;position:relative;z-index:2}\n.db-tools-menu{display:none;margin-top:4px;background:linear-gradient(180deg,#1e1813 0%,#120e0b 100%);border:2px solid #b5883b;border-radius:6px;box-shadow:0 10px 25px rgba(0,0,0,.9);overflow:hidden}\n.db-tools-menu.open{display:block}\n.db-tools-item{display:block;padding:9px 14px;color:#e8cfa0;text-decoration:none;font-size:13px;letter-spacing:.5px;border-bottom:1px solid #2e241b;cursor:pointer;text-align:left}\n.db-tools-item:last-child{border-bottom:none}\n.db-tools-item:hover{background:linear-gradient(90deg,rgba(212,157,47,.25) 0%,rgba(212,157,47,.05) 100%);color:#fff}\n.db-tools-item span{color:#e09f3e;margin-right:8px}\n.auth-frame-outer{position:absolute;top:204px;left:50%;width:446px;margin-left:-223px;background:linear-gradient(180deg,#2b2724 0%,#171513 100%);border:3px solid #9c7a3c;border-radius:8px;padding:26px 26px 22px 26px;box-shadow:0 20px 50px rgba(0,0,0,.92),inset 0 0 12px #000;z-index:20}\n.rune-bar-top{position:absolute;top:3px;left:26px;right:26px;height:21px;line-height:21px;background:linear-gradient(180deg,#1b1714 0%,#0d0b09 100%);border-bottom:2px solid #8c6a30;text-align:center;color:#e6b95c;font-size:12px;letter-spacing:5px;text-shadow:0 0 6px rgba(245,185,66,.75);overflow:hidden;white-space:nowrap}\n.rune-pillar{position:absolute;top:26px;bottom:22px;width:21px;background:linear-gradient(90deg,#181411 0%,#241e19 50%,#14110e 100%);color:#e6b95c;font-size:11px;line-height:18px;text-align:center;text-shadow:0 0 6px rgba(245,185,66,.75);overflow:hidden;padding-top:6px}\n.rune-pillar-left{left:3px;border-right:2px solid #8c6a30}\n.rune-pillar-right{right:3px;border-left:2px solid #8c6a30}\n.corner-diamond{position:absolute;width:28px;height:28px;background:linear-gradient(135deg,#b89860 0%,#5c4622 50%,#2b200e 100%);border:2px solid #ebd098;transform:rotate(45deg);-ms-transform:rotate(45deg);box-shadow:0 3px 8px rgba(0,0,0,.9);z-index:25}\n.corner-diamond-gem{position:absolute;top:4px;left:4px;right:4px;bottom:4px;background:radial-gradient(circle at 35% 35%,#fff2a6 0%,#f59e0b 45%,#9a3412 100%);border:1px solid #571d06;box-shadow:0 0 8px #f59e0b}\n.cd-tl{top:-8px;left:-8px}\n.cd-tr{top:-8px;right:-8px}\n.cd-bl{bottom:-8px;left:-8px}\n.cd-br{bottom:-8px;right:-8px}\n.auth-inner-chamber{border:2px solid #c9a35e;border-radius:4px;overflow:hidden;box-shadow:inset 0 0 10px rgba(0,0,0,.85)}\n.auth-header-box{background:radial-gradient(ellipse at center,#1d1915 0%,#0d0b09 100%);padding:13px 16px 12px 16px;text-align:center;border-bottom:3px solid #9e7b3c;box-shadow:inset 0 -3px 8px rgba(0,0,0,.8)}\n.auth-header-title{font-size:25px;font-weight:bold;color:#f7d788;letter-spacing:.8px;text-shadow:0 2px 4px #000,0 0 12px rgba(245,196,81,.35)}\n.auth-status-msg{font-family:Tahoma,Arial,sans-serif;font-size:11px;color:#6ee7b7;margin-top:3px;min-height:14px}\n.auth-bronze-plate{background:linear-gradient(180deg,#cbb38b 0%,#bda174 45%,#a38457 85%,#8f7146 100%);padding:14px 22px 18px 22px;box-shadow:inset 0 2px 5px rgba(255,245,220,.45),inset 0 -3px 8px rgba(45,30,10,.6)}\n.field-group{margin-bottom:10px}\n.field-label{display:block;font-family:\"Cinzel\",\"Times New Roman\",Georgia,serif;font-size:12px;font-weight:bold;color:#1f160c;text-shadow:0 1px 0 rgba(255,235,195,.5);letter-spacing:.8px;margin-bottom:4px;margin-left:4px;text-transform:uppercase}\n.input-bevel-wrap{padding:2px;border-radius:18px;background:linear-gradient(180deg,#6b5535 0%,#e6cfa3 100%);box-shadow:0 1px 2px rgba(255,245,215,.5)}\n.auth-input{width:100%;height:34px;line-height:30px;padding:0 14px;border-radius:16px;border:2px solid #1c1610;background:linear-gradient(180deg,#332d24 0%,#463e33 50%,#3b342a 100%);box-shadow:inset 0 3px 6px rgba(0,0,0,.75);color:#f7ebd2;font-family:Tahoma,Verdana,sans-serif;font-size:13px;outline:none}\n.auth-input:focus{border-color:#d4a243;box-shadow:inset 0 3px 6px rgba(0,0,0,.8),0 0 6px rgba(212,162,67,.6)}\n.btn-stack{margin-top:14px}\n.btn-slot{padding:2px;border-radius:10px;background:linear-gradient(180deg,#4d391d 0%,#dfca9f 100%);margin-bottom:9px}\n.btn-slot:last-child{margin-bottom:0}\n.fantasy-btn{width:100%;height:38px;border-radius:8px;font-family:\"Cinzel\",\"Palatino Linotype\",Georgia,serif;font-size:15px;font-weight:bold;letter-spacing:1.2px;text-transform:uppercase;cursor:pointer;outline:none}\n.btn-gold{background:linear-gradient(180deg,#fae29c 0%,#e5b955 45%,#c48d29 85%,#9e6b14 100%);border:2px solid #593b08;box-shadow:inset 0 2px 2px rgba(255,250,225,.8),inset 0 -2px 3px rgba(90,55,5,.6);color:#1c1306;text-shadow:0 1px 0 rgba(255,240,190,.7)}\n.btn-gold:hover{background:linear-gradient(180deg,#fff0be 0%,#f0c565 45%,#d49b35 85%,#b07818 100%)}\n.btn-gold:active{padding-top:2px}\n.btn-bronze{background:linear-gradient(180deg,#c28258 0%,#965630 48%,#6e3818 85%,#4d220a 100%);border:2px solid #361705;box-shadow:inset 0 2px 2px rgba(245,200,170,.55),inset 0 -2px 3px rgba(35,12,2,.7);color:#fff6e5;text-shadow:0 2px 3px #000}\n.btn-bronze:hover{background:linear-gradient(180deg,#d19066 0%,#a86239 48%,#7d411d 85%,#5c2a0d 100%)}\n.btn-bronze:active{padding-top:2px}\n.server-pill{position:absolute;top:10px;right:34px;font-family:Tahoma,sans-serif;font-size:11px;color:#d8c8a8;text-shadow:0 1px 2px #000;z-index:25}\n.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background-color:#34d399;box-shadow:0 0 6px #34d399;margin-right:4px;vertical-align:middle}\n";
+  var html=("<div class=\"launcher-canvas\">\n<div class=\"top-vignette\"></div>\n<div class=\"server-pill\" id=\"serverStatusWrap\"><span class=\"status-dot\" id=\"statusDot\"></span><span id=\"statusText\">checking...</span></div>\n<div class=\"header-cluster\">\n<div class=\"medallion medallion-left\"><div class=\"medallion-inner-ring\"><div class=\"medallion-viewport\"><img id=\"paladinImg\" src=\"__PALADIN__\" alt=\"Paladin\"></div></div></div>\n<div class=\"logo-crest\">\n<svg width=\"550\" height=\"175\" viewBox=\"0 0 550 175\" xmlns=\"http://www.w3.org/2000/svg\">\n<defs>\n<linearGradient id=\"goldTextGrad\" x1=\"0%\" y1=\"0%\" x2=\"0%\" y2=\"100%\">\n<stop offset=\"0%\" stop-color=\"#fff6cc\"/><stop offset=\"28%\" stop-color=\"#f5c963\"/><stop offset=\"62%\" stop-color=\"#c48322\"/><stop offset=\"85%\" stop-color=\"#7d4a08\"/><stop offset=\"100%\" stop-color=\"#e3ad46\"/>\n</linearGradient>\n<linearGradient id=\"steelBacking\" x1=\"0%\" y1=\"0%\" x2=\"0%\" y2=\"100%\">\n<stop offset=\"0%\" stop-color=\"#453f3c\"/><stop offset=\"50%\" stop-color=\"#221e1c\"/><stop offset=\"100%\" stop-color=\"#110e0c\"/>\n</linearGradient>\n<linearGradient id=\"crestRim\" x1=\"0%\" y1=\"0%\" x2=\"100%\" y2=\"100%\">\n<stop offset=\"0%\" stop-color=\"#d8c8b0\"/><stop offset=\"50%\" stop-color=\"#857560\"/><stop offset=\"100%\" stop-color=\"#42382c\"/>\n</linearGradient>\n<linearGradient id=\"ribbonGrad\" x1=\"0%\" y1=\"0%\" x2=\"100%\" y2=\"0%\">\n<stop offset=\"0%\" stop-color=\"#8a5a19\"/><stop offset=\"50%\" stop-color=\"#e3b252\"/><stop offset=\"100%\" stop-color=\"#7a4e12\"/>\n</linearGradient>\n</defs>\n<path d=\"M 95,126 L 165,112 L 165,134 L 105,142 L 115,131 Z\" fill=\"url(#ribbonGrad)\" stroke=\"#2e1c05\" stroke-width=\"2\"/>\n<path d=\"M 455,126 L 385,112 L 385,134 L 445,142 L 435,131 Z\" fill=\"url(#ribbonGrad)\" stroke=\"#2e1c05\" stroke-width=\"2\"/>\n<polygon points=\"48,40 205,34 275,18 345,34 502,40 526,75 500,112 365,116 275,152 185,116 50,112 24,75\" fill=\"url(#steelBacking)\" stroke=\"url(#crestRim)\" stroke-width=\"5\"/>\n<polygon points=\"54,46 205,40 275,25 345,40 496,46 517,75 494,106 360,110 275,144 190,110 56,106 33,75\" fill=\"none\" stroke=\"#b88a39\" stroke-width=\"2\"/>\n<polygon points=\"34,75 44,65 54,75 44,85\" fill=\"#ea580c\" stroke=\"#fde047\" stroke-width=\"1.5\"/>\n<polygon points=\"516,75 506,65 496,75 506,85\" fill=\"#ea580c\" stroke=\"#fde047\" stroke-width=\"1.5\"/>\n<polygon points=\"222,28 232,16 242,28 232,40\" fill=\"#c084fc\" stroke=\"#f3e8ff\" stroke-width=\"1.5\"/>\n<polygon points=\"308,28 318,16 328,28 318,40\" fill=\"#fde047\" stroke=\"#fef9c3\" stroke-width=\"1.5\"/>\n<polygon points=\"275,2 284,17 300,22 284,29 275,44 266,29 250,22 266,17\" fill=\"#facc15\" stroke=\"#fffbeb\" stroke-width=\"1.5\"/>\n<text x=\"275\" y=\"92\" text-anchor=\"middle\" font-family=\"Cinzel Decorative, Averia Serif Libre, Georgia, serif\" font-size=\"47\" font-weight=\"bold\" letter-spacing=\"2\" fill=\"#261302\" stroke=\"#1a0c00\" stroke-width=\"8\" stroke-linejoin=\"round\">DUNGEON BLITZ</text>\n<text x=\"275\" y=\"90\" text-anchor=\"middle\" font-family=\"Cinzel Decorative, Averia Serif Libre, Georgia, serif\" font-size=\"47\" font-weight=\"bold\" letter-spacing=\"2\" fill=\"url(#goldTextGrad)\" stroke=\"#5c3809\" stroke-width=\"1.5\">DUNGEON BLITZ</text>\n<text x=\"275\" y=\"137\" text-anchor=\"middle\" font-family=\"Cinzel Decorative, Averia Serif Libre, Georgia, serif\" font-size=\"38\" font-weight=\"bold\" letter-spacing=\"3\" fill=\"#261302\" stroke=\"#1a0c00\" stroke-width=\"7\" stroke-linejoin=\"round\">REVAMP</text>\n<text x=\"275\" y=\"135\" text-anchor=\"middle\" font-family=\"Cinzel Decorative, Averia Serif Libre, Georgia, serif\" font-size=\"38\" font-weight=\"bold\" letter-spacing=\"3\" fill=\"url(#goldTextGrad)\" stroke=\"#5c3809\" stroke-width=\"1.2\">REVAMP</text>\n</svg>\n</div>\n<div class=\"medallion medallion-right\"><div class=\"medallion-inner-ring\"><div class=\"medallion-viewport\"><img id=\"rogueImg\" src=\"__ROGUE__\" alt=\"Rogue\"></div></div></div>\n</div>\n<div class=\"db-tools-wrapper\">\n<div class=\"db-tools-trigger\" id=\"dbToolsBtn\">\n<svg class=\"db-tools-emblem\" viewBox=\"0 0 120 54\" xmlns=\"http://www.w3.org/2000/svg\">\n<line x1=\"22\" y1=\"48\" x2=\"98\" y2=\"8\" stroke=\"#cbd5e1\" stroke-width=\"4\" stroke-linecap=\"round\"/>\n<line x1=\"98\" y1=\"48\" x2=\"22\" y2=\"8\" stroke=\"#cbd5e1\" stroke-width=\"4\" stroke-linecap=\"round\"/>\n<circle cx=\"60\" cy=\"30\" r=\"19\" fill=\"#33291f\" stroke=\"#d4a243\" stroke-width=\"4\" stroke-dasharray=\"7,4\"/>\n<circle cx=\"60\" cy=\"30\" r=\"13\" fill=\"#1c1610\" stroke=\"#9e7329\" stroke-width=\"2\"/>\n<circle cx=\"60\" cy=\"30\" r=\"5\" fill=\"#d4a243\"/>\n</svg>\n<div class=\"db-tools-plaque\">DB TOOLS <span class=\"db-tools-arrow\">&#9660;</span></div>\n<svg class=\"db-tools-bottom-shield\" viewBox=\"0 0 64 16\" xmlns=\"http://www.w3.org/2000/svg\">\n<polygon points=\"4,0 60,0 32,15\" fill=\"#2a2119\" stroke=\"#b88b3a\" stroke-width=\"2\"/>\n<polyline points=\"25,4 32,10 39,4\" fill=\"none\" stroke=\"#e6b95c\" stroke-width=\"2\"/>\n</svg>\n</div>\n<div class=\"db-tools-menu\" id=\"dbToolsMenu\">\n<div class=\"db-tools-item\" onclick=\"onToolClick('Gear Library')\"><span>&#10070;</span>Gear Library</div>\n<div class=\"db-tools-item\" onclick=\"onToolClick('Stat Calculator')\"><span>&#10070;</span>Stat Calculator</div>\n<div class=\"db-tools-item\" onclick=\"onToolClick('Item Spawner')\"><span>&#10070;</span>Item Spawner</div>\n<div class=\"db-tools-item\" onclick=\"onToolClick('Mod Panel')\"><span>&#10070;</span>Mod Panel</div>\n</div>\n</div>\n<div class=\"auth-frame-outer\">\n<div class=\"corner-diamond cd-tl\"><div class=\"corner-diamond-gem\"></div></div>\n<div class=\"corner-diamond cd-tr\"><div class=\"corner-diamond-gem\"></div></div>\n<div class=\"corner-diamond cd-bl\"><div class=\"corner-diamond-gem\"></div></div>\n<div class=\"corner-diamond cd-br\"><div class=\"corner-diamond-gem\"></div></div>\n<div class=\"rune-bar-top\">&#5791; &#5798; &#5800; &#5809; &#5810; &#5815; &#5817; &#5818; &#5822; &#5825; &#5827; &#5831; &#5832; &#5833; &#5834; &#5839; &#5842; &#5846; &#5847; &#5850; &#5852;</div>\n<div class=\"rune-pillar rune-pillar-left\">&#5791;<br>&#5798;<br>&#5800;<br>&#5809;<br>&#5810;<br>&#5815;<br>&#5817;<br>&#5818;<br>&#5822;<br>&#5825;<br>&#5827;<br>&#5831;<br>&#5832;<br>&#5833;<br>&#5834;<br>&#5839;<br>&#5842;</div>\n<div class=\"rune-pillar rune-pillar-right\">&#5842;<br>&#5839;<br>&#5834;<br>&#5833;<br>&#5832;<br>&#5831;<br>&#5827;<br>&#5825;<br>&#5822;<br>&#5818;<br>&#5817;<br>&#5815;<br>&#5810;<br>&#5809;<br>&#5800;<br>&#5798;<br>&#5791;</div>\n<div class=\"auth-inner-chamber\">\n<div class=\"auth-header-box\">\n<div class=\"auth-header-title\">Create Your Account</div>\n<div class=\"auth-status-msg\" id=\"statusMsg\"></div>\n</div>\n<div class=\"auth-bronze-plate\">\n<form id=\"registerForm\" onsubmit=\"return false;\">\n<div class=\"field-group\"><label class=\"field-label\" for=\"emailInput\">EMAIL</label><div class=\"input-bevel-wrap\"><input class=\"auth-input\" id=\"emailInput\" type=\"text\" autocomplete=\"off\"></div></div>\n<div class=\"field-group\"><label class=\"field-label\" for=\"passwordInput\">PASSWORD</label><div class=\"input-bevel-wrap\"><input class=\"auth-input\" id=\"passwordInput\" type=\"password\" autocomplete=\"off\"></div></div>\n<div class=\"field-group\"><label class=\"field-label\" for=\"confirmInput\">CONFIRM PASSWORD</label><div class=\"input-bevel-wrap\"><input class=\"auth-input\" id=\"confirmInput\" type=\"password\" autocomplete=\"off\"></div></div>\n<div class=\"btn-stack\">\n<div class=\"btn-slot\"><button type=\"button\" class=\"fantasy-btn btn-gold\" id=\"createAccountBtn\" onclick=\"handleCreateAccount()\">CREATE ACCOUNT</button></div>\n<div class=\"btn-slot\"><button type=\"button\" class=\"fantasy-btn btn-bronze\" id=\"launchGameBtn\" onclick=\"handleLaunchGame()\">LAUNCH GAME</button></div>\n</div>\n</form>\n</div>\n</div>\n</div>\n</div>\n").replace('__PALADIN__',IMG_PALADIN).replace('__ROGUE__',IMG_ROGUE);
 
   var st=document.createElement('style'); st.setAttribute('type','text/css');
   try{ st.styleSheet.cssText=css; }catch(e){ st.appendChild(document.createTextNode(css)); }
@@ -95,36 +19,36 @@ var IMG_PALADIN="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAJ0AAACqCAYAAAC3W
   document.getElementById('root').innerHTML=html;
 
   function $(id){return document.getElementById(id);}
-  function setLine(t,cls){ var m=$('sl'); m.innerHTML=t; m.className='sl '+(cls||''); }
-  function setServer(up){
-    serverUp=up;
-    $('dot').className='dot '+(up?'up':'wait');
-    $('stxt').innerHTML=up?'online':'offline';
-    var f=$('fstat'); f.innerHTML=up?'ONLINE':'OFFLINE'; f.className=up?'on':'off';
-  }
+  function setMsg(t,color){ var m=$('statusMsg'); if(m){ m.style.color=color||'#f3d486'; m.innerHTML=t; } }
+  function setServer(up){ serverUp=up; var d=$('statusDot'), s=$('statusText');
+    if(d){ d.style.background=up?'#34d399':'#b04a4a'; d.style.boxShadow='0 0 6px '+(up?'#34d399':'#b04a4a'); }
+    if(s){ s.innerHTML=up?'online':'offline'; } }
   function checkServer(){ try{ var x=newXhr(); var done=false; x.open('GET',HEALTH+'?t='+new Date().getTime(),true);
     x.onreadystatechange=function(){ if(x.readyState==4&&!done){done=true;setServer(x.status==200);} }; x.send();
     window.setTimeout(function(){ if(!done){done=true;try{x.abort();}catch(e){}setServer(false);} },4000); }catch(e){ setServer(false); } }
   function jesc(s){ return String(s).replace(/\\/g,'\\\\').replace(/"/g,'\\"'); }
 
-  window.toggleTools=function(ev){ var m=$('tmenu'); m.className='menu '+(m.className.indexOf('open')<0?'open':''); if(ev&&ev.cancelBubble!=undefined)ev.cancelBubble=true; };
-  window.dbTool=function(){ $('tmenu').className='menu'; setLine('DB Tools are coming soon.',''); };
-  document.onclick=function(){ var m=$('tmenu'); if(m)m.className='menu'; };
+  (function(){ var btn=$('dbToolsBtn'), menu=$('dbToolsMenu');
+    if(btn&&menu){ btn.onclick=function(e){ var ev=e||window.event; if(ev.stopPropagation)ev.stopPropagation(); else ev.cancelBubble=true;
+        menu.className=(menu.className.indexOf('open')!==-1)?'db-tools-menu':'db-tools-menu open'; };
+      document.onclick=function(){ menu.className='db-tools-menu'; }; } })();
 
-  window.doRegister=function(){
-    var email=$('email').value, pw=$('pw').value, cpw=$('cpw').value;
-    if(!email||!pw){ setLine('Fill in every field.','err'); return; }
-    if(pw!=cpw){ setLine('Passwords do not match.','err'); return; }
-    setLine('Creating account...','');
+  window.onToolClick=function(name){ var m=$('dbToolsMenu'); if(m)m.className='db-tools-menu'; setMsg(name+' — coming soon.','#fde047'); };
+
+  window.handleCreateAccount=function(){
+    var email=$('emailInput').value, pw=$('passwordInput').value, cpw=$('confirmInput').value;
+    if(!email||!pw){ setMsg('Fill in every field.','#ff8b7f'); return; }
+    if(pw!=cpw){ setMsg('Passwords do not match.','#ff8b7f'); return; }
+    setMsg('Creating account...','#f3d486');
     try{ var x=newXhr(); x.open('POST',API,true); x.setRequestHeader('Content-Type','application/json');
       x.onreadystatechange=function(){ if(x.readyState!=4) return; var r={}; try{r=eval('('+x.responseText+')');}catch(e){}
-        if(x.status==200&&r.ok){ setLine('Account created! Press Launch Game and sign in.','ok'); }
-        else if(x.status===0){ setLine("Can't reach the server. Try again.",'err'); }
-        else { setLine((r&&r.error)?r.error:'Could not create the account.','err'); } };
+        if(x.status==200&&r.ok){ setMsg('Account created! Press Launch Game and sign in.','#6ee7b7'); }
+        else if(x.status===0){ setMsg("Can't reach the server. Try again.",'#ff8b7f'); }
+        else { setMsg((r&&r.error)?r.error:'Could not create the account.','#ff8b7f'); } };
       x.send('{"email":"'+jesc(email)+'","password":"'+jesc(pw)+'","confirmPassword":"'+jesc(cpw)+'"}');
-    }catch(e){ setLine('Request failed: '+e.message,'err'); }
+    }catch(e){ setMsg('Request failed: '+e.message,'#ff8b7f'); }
   };
-  window.doPlay=function(){ try{ new ActiveXObject('WScript.Shell').Run('"'+PROJ+'" "'+SWF+'"',1,false); setLine('Launching the game - sign in with your account.','ok'); }catch(e){ setLine('Could not launch the game: '+e.message,'err'); } };
+  window.handleLaunchGame=function(){ try{ new ActiveXObject('WScript.Shell').Run('"'+PROJ+'" "'+SWF+'"',1,false); setMsg('Launching the game - sign in with your account.','#6ee7b7'); }catch(e){ setMsg('Could not launch the game: '+e.message,'#ff8b7f'); } };
 
   checkServer(); window.setInterval(checkServer,3000);
 })();
