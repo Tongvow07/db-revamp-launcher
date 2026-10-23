@@ -3,13 +3,13 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
 (function(){
   /* Sign in / register / signed-in views drawn over the painted panel. ES5 only: this runs in
      an HTA (Internet Explorer engine). The sign-in is remembered as the server's device token in
-     %APPDATA%\DBRevamped\launcher-session.txt; Play hands that login to the game, so the game
-     opens straight on the player's characters. */
+     %APPDATA%\DBRevamped\launcher-session.txt. Play trades it for a one-time launch code and
+     opens the game with it, so the game signs itself in and opens on the player's characters. */
   var SWF=HOST+"/p/cbp/DungeonBlitz.swf";
   var HEALTH=HOST+"/api/auth/discord/config";
   var API_CREATE=HOST+"/api/account/create";
   var API_LOGIN=HOST+"/api/auth/launcher/password-login";
-  var API_RESUME=HOST+"/api/auth/launcher/resume";
+  var API_PLAY=HOST+"/api/auth/launcher/play";
   var API_FORGET=HOST+"/api/auth/launcher/forget";
   var FORGOT_URL=HOST+"/lostpw";
   var serverUp=false, busy=false, view='signin', session=null;
@@ -188,10 +188,12 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
   window.dbPlay=function(){
     if(busy||!session) return;
     setBusy(true); setMsg('Starting the game...');
-    post(API_RESUME,'{"token":"'+jesc(session.token)+'"}',function(status,r){
-      if(status==200&&r.ok&&r.token){
+    post(API_PLAY,'{"token":"'+jesc(session.token)+'"}',function(status,r){
+      if(status==200&&r.ok&&r.token&&r.launchCode){
         session={email:r.email,token:r.token}; saveSession(session);
-        try{ new ActiveXObject('WScript.Shell').Run('"'+PROJ+'" "'+SWF+'"',1,false); setMsg('The game is opening - you are signed in.'); }
+        /* The game signs itself in with this one-time code (good for two minutes, used once). */
+        var url=SWF+'?dbLaunchEmail='+encodeURIComponent(r.email)+'&dbLaunchCode='+r.launchCode;
+        try{ new ActiveXObject('WScript.Shell').Run('"'+PROJ+'" "'+url+'"',1,false); setMsg('The game is opening - you are signed in.'); }
         catch(e){ setMsg('Could not start the game: '+e.message,true); }
         window.setTimeout(function(){ setBusy(false); },4000);
         return;
