@@ -1,9 +1,11 @@
 # Builds installer\db-revamped.ico: the original Dungeon Blitz dragon logo on a dark rounded tile,
-# at 256, 64, 48, 32 and 16 px (PNG-compressed entries, as Windows Vista+ reads them).
+# at 256, 64, 48, 32 and 16 px (PNG-compressed entries, as Windows Vista+ reads them), and the same
+# tile as the AIR app's icons (air\icons\icon<size>.png, named in air\DBRevampedAir-app.xml).
 #   powershell -ExecutionPolicy Bypass -File installer\make-icon.ps1
 param(
     [string]$Logo = "$PSScriptRoot\..\..\db-r-server\LOCAL\src\client\content\localhost\rankings\i\dblogo.png",
-    [string]$Out = "$PSScriptRoot\db-revamped.ico"
+    [string]$Out = "$PSScriptRoot\db-revamped.ico",
+    [string]$AirIcons = "$PSScriptRoot\..\air\icons"
 )
 Add-Type -AssemblyName System.Drawing
 $logoImage = [System.Drawing.Image]::FromFile((Resolve-Path $Logo))
@@ -41,4 +43,6 @@ foreach ($png in $pngs) { $bw.Write($png) }
 $bw.Flush(); [System.IO.File]::WriteAllBytes($Out, $ico.ToArray())
 # A 256 preview, to look at.
 (New-Tile 256).Save("$PSScriptRoot\db-revamped-icon-preview.png", [System.Drawing.Imaging.ImageFormat]::Png)
+New-Item -ItemType Directory -Force $AirIcons | Out-Null
+foreach ($size in 16, 32, 48, 128, 256) { (New-Tile $size).Save("$AirIcons\icon$size.png", [System.Drawing.Imaging.ImageFormat]::Png) }
 "wrote $Out ($((Get-Item $Out).Length) bytes)"

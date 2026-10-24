@@ -44,7 +44,9 @@ bat('adt.bat', [
     '-package', '-storetype', 'pkcs12', '-keystore', CERT,
     '-storepass', fs.readFileSync(PASS_FILE, 'utf8').trim(),
     '-target', 'bundle', bundle, path.join(HERE, 'DBRevampedAir-app.xml'),
-    '-C', path.join(HERE, 'build'), 'DBRevampedAir.swf'
+    '-C', path.join(HERE, 'build'), 'DBRevampedAir.swf',
+    // The window, taskbar and exe icons (made by installer\make-icon.ps1).
+    '-C', HERE, 'icons'
 ]);
 if (!fs.existsSync(path.join(bundle, 'DB Revamped.exe'))) {
     throw new Error('adt produced no DB Revamped.exe');
