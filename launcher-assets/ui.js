@@ -40,7 +40,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
     /* The panel's inside, redrawn so it can change between views. Bounds match the painted frame. */
     ".panel{position:absolute;left:35.9%;top:31.4%;width:28.3%;height:47.6%;z-index:20;font-size:16px}",
     ".panel-title{position:absolute;left:0;right:0;top:0;height:13.6%;background:linear-gradient(180deg,#221a14 0%,#120d0a 100%);border-bottom:2px solid #8a6326;color:#f3d486;text-align:center;font-size:1.45em;line-height:2.05em;text-shadow:0 2px 3px #000;letter-spacing:.02em}",
-    ".panel-body{position:absolute;left:0;right:0;top:13.6%;bottom:0;background:linear-gradient(180deg,#eadbb8 0%,#dcc79f 60%,#cdb486 100%);box-shadow:inset 0 0 1.4em rgba(90,60,20,.55);padding:3.5% 6% 0}",
+    ".panel-body{position:absolute;left:0;right:0;top:13.6%;bottom:0;overflow:hidden;background:linear-gradient(180deg,#eadbb8 0%,#dcc79f 60%,#cdb486 100%);box-shadow:inset 0 0 1.4em rgba(90,60,20,.55);padding:3.5% 6% 5%}",
     ".view{display:none}",
     ".view.active{display:block}",
     ".field-label{display:block;color:#3b2a18;font-size:.78em;font-weight:bold;letter-spacing:.06em;margin:3% 0 1.2%}",
@@ -56,7 +56,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
     ".msg.error{color:#9c2b1c}",
     ".link{display:block;margin-top:3%;text-align:center;font-family:Tahoma,sans-serif;font-size:.74em;color:#5a3a12;text-decoration:underline;cursor:pointer}",
     ".link:hover{color:#8a4b0c}",
-    ".who{margin:7% 0 3%;text-align:center;color:#3b2a18;font-size:.85em}",
+    ".who{margin:4% 0 2%;text-align:center;color:#3b2a18;font-size:.85em}",
     ".note{margin:3% 0 2%;text-align:center;color:#3b2a18;font-family:Tahoma,sans-serif;font-size:.74em;line-height:1.35em}",
     ".file-name{display:block;margin-top:2%;text-align:center;font-family:Tahoma,sans-serif;font-size:.74em;color:#1f140a;word-wrap:break-word;min-height:1.2em}",
     ".file-input{position:absolute;left:-9999px;width:1px;height:1px}",
@@ -99,12 +99,12 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
     /* Signed in */
     '<div class="view" id="view-signedin">',
     '<div class="who">Signed in as<b id="whoEmail"></b></div>',
+    '<div class="msg" id="msg-signedin" style="margin-top:0"></div>',
     '<button type="button" class="btn btn-gold" id="playBtn" onclick="dbPlay()">PLAY</button>',
     '<button type="button" class="btn btn-copper" onclick="dbSignOut()">SIGN OUT</button>',
     '<a class="link" id="engineLink" onclick="dbSwitchEngine()" style="display:none"></a>',
     '<button type="button" class="btn btn-transfer" onclick="dbShow(\'transfer\')">Already have account progress in the Minesa Server group? Worry not, upload your export files here and we will do the rest for you to get your account data!</button>',
-    '<div class="msg" id="msg-signedin"></div>',
-    '</div>',
+        '</div>',
     /* Transfer: send an account export for the staff to review */
     '<div class="view" id="view-transfer">',
     '<div class="note">Choose your <b>account.json</b> and the name you want. The staff review every request.</div>',
@@ -129,11 +129,12 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
 
   function $(id){return document.getElementById(id);}
   /* Text scales with the window, so the panel looks the same at every launcher size. */
-  function fitPanel(){ var p=$('panel'), s=$('stage'); if(p&&s){ p.style.fontSize=Math.max(9,Math.round(s.offsetWidth/1280*17))+'px'; } }
+  function fitPanel(){ var p=$('panel'), s=$('stage'); if(!p||!s) return; var size=Math.max(9,Math.round(s.offsetWidth/1280*17)); p.style.fontSize=size+'px';
+    var b=p.getElementsByTagName('div')[1]; if(!b) return; while(size>9&&b.scrollHeight>b.clientHeight+1){ size-=0.5; p.style.fontSize=size+'px'; } }
   fitPanel(); window.onresize=fitPanel;
 
   var TITLES={signin:'Sign In',register:'Create Your Account',signedin:'Welcome Back',transfer:'Transfer a Character'};
-  function setMsg(t,isError){ var m=$('msg-'+view); if(m){ m.className=isError?'msg error':'msg'; m.innerHTML=t||''; } }
+  function setMsg(t,isError){ var m=$('msg-'+view); if(m){ m.className=isError?'msg error':'msg'; m.innerHTML=t||''; } fitPanel(); }
   window.dbShow=function(name){
     view=name;
     var names=['signin','register','signedin','transfer'];
@@ -141,6 +142,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
     $('panelTitle').innerHTML=TITLES[name];
     setMsg('');
     if(name=='signedin'&&session){ $('whoEmail').innerHTML=esc(session.email); showEngine(); }
+    fitPanel();
     try{ if(name=='signin') $(($('signinEmail').value?'signinPassword':'signinEmail')).focus();
          else if(name=='register') $('regEmail').focus(); }catch(e){}
   };
