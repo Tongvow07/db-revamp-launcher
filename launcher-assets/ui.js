@@ -107,13 +107,14 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
     '</div>',
     /* Transfer: send an account export for the staff to review */
     '<div class="view" id="view-transfer">',
-    '<div class="note">Bring a character over from another Dungeon Blitz server. Choose the <b>account.json</b> from your export folder. The staff review every request and add the character to this account.</div>',
+    '<div class="note">Choose your <b>account.json</b> and the name you want. The staff review every request.</div>',
+    '<div class="msg" id="msg-transfer" style="margin-top:0"></div>',
     '<input class="file-input" id="transferFile" type="file" accept=".json" onchange="dbTransferPicked()">',
     '<button type="button" class="btn btn-copper" onclick="dbTransferChoose()">CHOOSE FILE</button>',
     '<span class="file-name" id="transferName">No file chosen</span>',
+    '<label class="field-label" for="transferCharName">CHARACTER NAME</label><input class="field" id="transferCharName" type="text" maxlength="16" autocomplete="off">',
     '<button type="button" class="btn btn-gold" id="transferBtn" onclick="dbTransferSend()">SEND REQUEST</button>',
     '<button type="button" class="btn btn-copper" onclick="dbShow(\'signedin\')">BACK</button>',
-    '<div class="msg" id="msg-transfer"></div>',
     '</div>',
     '</div>',
     '</div>',
@@ -262,17 +263,18 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
     if(busy||!session) return;
     var path=transferPath();
     if(!path){ setMsg('Choose your account.json first.',true); return; }
+    var wanted=String($('transferCharName').value||'').replace(/^\s+|\s+$/g,'');
+    if(!/^[A-Za-z][A-Za-z0-9]{2,15}$/.test(wanted)){ setMsg('Enter the name you want: 3-16 letters or digits, starting with a letter.',true); try{ $('transferCharName').focus(); }catch(e){} return; }
     var text;
     try{ text=readExport(path); }catch(e){ setMsg(e.message,true); return; }
     setBusy(true); setMsg('Sending your request...');
     var name=path.replace(/^.*[\\\/]/,'');
-    var body='{"token":'+jsonString(session.token)+',"fileName":'+jsonString(name)+',"exportText":'+jsonString(text)+'}';
+    var body='{"token":'+jsonString(session.token)+',"fileName":'+jsonString(name)+',"desiredName":'+jsonString(wanted)+',"exportText":'+jsonString(text)+'}';
     post(API_TRANSFER,body,function(status,r){
       setBusy(false);
       if(status==200&&r.ok){
-        var names=(r.characters&&r.characters.length)?r.characters.join(', '):'your character';
-        setMsg('Request sent for '+esc(names)+'! The staff will review it and add the character to this account. Request: '+esc(r.requestId));
-        try{ $('transferFile').value=''; }catch(e){} $('transferName').innerHTML='No file chosen';
+        setMsg('Sent! '+esc(wanted)+' will be added after the staff review it.');
+        try{ $('transferFile').value=''; }catch(e){} $('transferName').innerHTML='No file chosen'; $('transferCharName').value='';
         return;
       }
       if(status==401){ var email=session.email; session=null; clearSession(); $('signinEmail').value=email; dbShow('signin'); setMsg((r&&r.error)||'Please sign in again.',true); return; }
