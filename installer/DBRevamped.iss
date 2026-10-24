@@ -10,7 +10,7 @@
 ; Flash player or the icon change.
 
 #define AppName "DB Revamped"
-#define AppVersion "1.0.1"
+#define AppVersion "1.0.2"
 #define AppPublisher "DB Revamped"
 #define AppUrl "https://dungeonblitzv.duckdns.org"
 
