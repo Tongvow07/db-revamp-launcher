@@ -7,10 +7,10 @@
 ; an optional desktop shortcut and an entry in Settings > Apps for uninstalling. The launcher is
 ; DungeonBlitzR.hta run by Windows' own mshta.exe; its screen (ui.js) is downloaded from the
 ; server at every start, so this installer rarely needs rebuilding: only when the shell, the
-; Flash player or the icon change.
+; Flash player, the AIR engine or the icon change.
 
 #define AppName "DB Revamped"
-#define AppVersion "1.0.2"
+#define AppVersion "1.1.0"
 #define AppPublisher "DB Revamped"
 #define AppUrl "https://dungeonblitzv.duckdns.org"
 
@@ -47,6 +47,9 @@ Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription
 [Files]
 Source: "..\DungeonBlitzR.hta"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\flashplayer.exe"; DestDir: "{app}"; Flags: ignoreversion
+; The AIR engine (node air\build.js): the game in AIR's runtime, up to 100 fps. The launcher starts
+; it instead of flashplayer.exe unless the player switched back to Flash.
+Source: "..\air\bundle\*"; DestDir: "{app}\air"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; Offline fallback for the launcher screen; the live one comes from the server.
 Source: "..\launcher-assets\ui.js"; DestDir: "{app}\launcher-assets"; Flags: ignoreversion
 Source: "db-revamped.ico"; DestDir: "{app}"; Flags: ignoreversion

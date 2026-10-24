@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<application xmlns="http://ns.adobe.com/air/application/51.4">
+    <id>org.dbrevamped.game</id>
+    <filename>DB Revamped</filename>
+    <name>DB Revamped</name>
+    <versionNumber>1.0.0</versionNumber>
+    <initialWindow>
+        <content>DBRevampedAir.swf</content>
+        <title>DB Revamped</title>
+        <systemChrome>standard</systemChrome>
+        <transparent>false</transparent>
+        <visible>true</visible>
+        <resizable>true</resizable>
+        <maximizable>true</maximizable>
+        <renderMode>direct</renderMode>
+    </initialWindow>
+    <supportedProfiles>desktop extendedDesktop</supportedProfiles>
+    <architecture>64</architecture>
+</application>

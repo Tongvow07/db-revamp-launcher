@@ -96,6 +96,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
     '<div class="who">Signed in as<b id="whoEmail"></b></div>',
     '<button type="button" class="btn btn-gold" id="playBtn" onclick="dbPlay()">PLAY</button>',
     '<button type="button" class="btn btn-copper" onclick="dbSignOut()">SIGN OUT</button>',
+    '<a class="link" id="engineLink" onclick="dbSwitchEngine()" style="display:none"></a>',
     '<div class="msg" id="msg-signedin"></div>',
     '</div>',
     '</div>',
@@ -122,7 +123,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
     for(var i=0;i<names.length;i++){ var v=$('view-'+names[i]); if(v) v.className=(names[i]==name)?'view active':'view'; }
     $('panelTitle').innerHTML=TITLES[name];
     setMsg('');
-    if(name=='signedin'&&session){ $('whoEmail').innerHTML=esc(session.email); }
+    if(name=='signedin'&&session){ $('whoEmail').innerHTML=esc(session.email); showEngine(); }
     try{ if(name=='signin') $(($('signinEmail').value?'signinPassword':'signinEmail')).focus();
          else if(name=='register') $('regEmail').focus(); }catch(e){}
   };
@@ -157,6 +158,19 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
       if(parts.length>=3&&(parts[0]==SECURE_HOST||parts[0]==PLAIN_HOST)&&parts[1]&&parts[2]) return {email:parts[1],token:parts[2].replace(/\s+$/,'')}; }catch(e){} return null; }
   function saveSession(s){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!fso.FolderExists(SESSION_DIR)) fso.CreateFolder(SESSION_DIR);
       var ts=fso.CreateTextFile(SESSION_FILE,true,true); ts.Write(SECURE_HOST+'\n'+s.email+'\n'+s.token); ts.Close(); }catch(e){} }
+  /* The engine: the AIR app installed beside flashplayer.exe (installer 1.1.0 and later) runs the
+     game at up to 100 fps where Flash Player 32 stops at 60. AIR is the default when it is there;
+     the player may switch back to Flash, and the choice is remembered in engine.txt. */
+  var AIR_EXE=hereDir()+'\\air\\DB Revamped.exe';
+  var ENGINE_FILE=SESSION_DIR?SESSION_DIR+'\\engine.txt':null;
+  function hasAir(){ try{ return new ActiveXObject('Scripting.FileSystemObject').FileExists(AIR_EXE); }catch(e){ return false; } }
+  function loadEngine(){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(ENGINE_FILE&&fso.FileExists(ENGINE_FILE)){ var ts=fso.OpenTextFile(ENGINE_FILE,1,false); var v=ts.ReadAll(); ts.Close(); if(/flash/i.test(v)) return 'flash'; } }catch(e){} return 'air'; }
+  function saveEngine(v){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!fso.FolderExists(SESSION_DIR)) fso.CreateFolder(SESSION_DIR); var ts=fso.CreateTextFile(ENGINE_FILE,true); ts.Write(v); ts.Close(); }catch(e){} }
+  function useAir(){ return hasAir()&&loadEngine()=='air'; }
+  function showEngine(){ var a=$('engineLink'); if(!a) return; if(!hasAir()){ a.style.display='none'; return; }
+    a.style.display='block'; a.innerHTML=useAir()?'Smooth engine (AIR) - switch to classic Flash':'Classic Flash - switch to the smooth engine (AIR)'; }
+  window.dbSwitchEngine=function(){ saveEngine(useAir()?'flash':'air'); showEngine(); };
+
   function clearSession(){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(SESSION_FILE&&fso.FileExists(SESSION_FILE)) fso.DeleteFile(SESSION_FILE,true); }catch(e){} }
 
   function signIn(email,password,onDone){
@@ -199,7 +213,8 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
         session={email:r.email,token:r.token}; saveSession(session);
         /* The game signs itself in with this one-time code (good for two minutes, used once). */
         var url=SWF+'?dbLaunchEmail='+encodeURIComponent(r.email)+'&dbLaunchCode='+r.launchCode;
-        try{ new ActiveXObject('WScript.Shell').Run('"'+PROJ+'" "'+url+'"',1,false); setMsg('The game is opening - you are signed in.'); }
+        var exe=useAir()?AIR_EXE:PROJ;
+        try{ new ActiveXObject('WScript.Shell').Run('"'+exe+'" "'+url+'"',1,false); setMsg('The game is opening - you are signed in.'); }
         catch(e){ setMsg('Could not start the game: '+e.message,true); }
         window.setTimeout(function(){ setBusy(false); },4000);
         return;
