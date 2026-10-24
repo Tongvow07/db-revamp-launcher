@@ -57,6 +57,11 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
     ".link{display:block;margin-top:3%;text-align:center;font-family:Tahoma,sans-serif;font-size:.74em;color:#5a3a12;text-decoration:underline;cursor:pointer}",
     ".link:hover{color:#8a4b0c}",
     ".who{margin:7% 0 3%;text-align:center;color:#3b2a18;font-size:.85em}",
+    ".note{margin:3% 0 2%;text-align:center;color:#3b2a18;font-family:Tahoma,sans-serif;font-size:.74em;line-height:1.35em}",
+    ".file-name{display:block;margin-top:2%;text-align:center;font-family:Tahoma,sans-serif;font-size:.74em;color:#1f140a;word-wrap:break-word;min-height:1.2em}",
+    ".file-input{position:absolute;left:-9999px;width:1px;height:1px}",
+    ".btn-transfer{height:auto;padding:.45em .6em;font-family:Tahoma,sans-serif;font-size:.68em;font-weight:bold;line-height:1.3em;letter-spacing:0;white-space:normal;background:linear-gradient(180deg,#4c6b8f 0%,#34506f 55%,#253b55 100%);color:#f1e6cf;border-color:#1c2c40;text-shadow:0 1px 1px #0b1420}",
+    ".btn-transfer:hover{background:linear-gradient(180deg,#5a7ca3 0%,#3e5e82 55%,#2c4664 100%)}",
     ".who b{display:block;margin-top:2%;font-size:1.05em;color:#1f140a;word-wrap:break-word}"
   ].join("\n");
 
@@ -97,7 +102,18 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
     '<button type="button" class="btn btn-gold" id="playBtn" onclick="dbPlay()">PLAY</button>',
     '<button type="button" class="btn btn-copper" onclick="dbSignOut()">SIGN OUT</button>',
     '<a class="link" id="engineLink" onclick="dbSwitchEngine()" style="display:none"></a>',
+    '<button type="button" class="btn btn-transfer" onclick="dbShow(\'transfer\')">Already have account progress in the Minesa Server group? Worry not, upload your export files here and we will do the rest for you to get your account data!</button>',
     '<div class="msg" id="msg-signedin"></div>',
+    '</div>',
+    /* Transfer: send an account export for the staff to review */
+    '<div class="view" id="view-transfer">',
+    '<div class="note">Bring a character over from another Dungeon Blitz server. Choose the <b>account.json</b> from your export folder. The staff review every request and add the character to this account.</div>',
+    '<input class="file-input" id="transferFile" type="file" accept=".json" onchange="dbTransferPicked()">',
+    '<button type="button" class="btn btn-copper" onclick="dbTransferChoose()">CHOOSE FILE</button>',
+    '<span class="file-name" id="transferName">No file chosen</span>',
+    '<button type="button" class="btn btn-gold" id="transferBtn" onclick="dbTransferSend()">SEND REQUEST</button>',
+    '<button type="button" class="btn btn-copper" onclick="dbShow(\'signedin\')">BACK</button>',
+    '<div class="msg" id="msg-transfer"></div>',
     '</div>',
     '</div>',
     '</div>',
@@ -115,11 +131,11 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
   function fitPanel(){ var p=$('panel'), s=$('stage'); if(p&&s){ p.style.fontSize=Math.max(9,Math.round(s.offsetWidth/1280*17))+'px'; } }
   fitPanel(); window.onresize=fitPanel;
 
-  var TITLES={signin:'Sign In',register:'Create Your Account',signedin:'Welcome Back'};
+  var TITLES={signin:'Sign In',register:'Create Your Account',signedin:'Welcome Back',transfer:'Transfer a Character'};
   function setMsg(t,isError){ var m=$('msg-'+view); if(m){ m.className=isError?'msg error':'msg'; m.innerHTML=t||''; } }
   window.dbShow=function(name){
     view=name;
-    var names=['signin','register','signedin'];
+    var names=['signin','register','signedin','transfer'];
     for(var i=0;i<names.length;i++){ var v=$('view-'+names[i]); if(v) v.className=(names[i]==name)?'view active':'view'; }
     $('panelTitle').innerHTML=TITLES[name];
     setMsg('');
@@ -129,7 +145,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
   };
   function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function jesc(s){ return String(s).replace(/\\/g,'\\\\').replace(/"/g,'\\"'); }
-  function setBusy(on){ busy=on; var ids=['signinBtn','registerBtn','playBtn']; for(var i=0;i<ids.length;i++){ var b=$(ids[i]); if(b) b.disabled=on; } }
+  function setBusy(on){ busy=on; var ids=['signinBtn','registerBtn','playBtn','transferBtn']; for(var i=0;i<ids.length;i++){ var b=$(ids[i]); if(b) b.disabled=on; } }
 
   function setServer(up){ serverUp=up; var d=$('statusDot'), s=$('statusText');
     if(d){ d.style.background=up?'#34d399':'#b04a4a'; d.style.boxShadow='0 0 6px '+(up?'#34d399':'#b04a4a'); }
@@ -224,6 +240,43 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
         var why=(r&&r.message)?r.message:'Your sign-in has expired. Please sign in again.';
         var email=session.email; session=null; clearSession(); $('signinEmail').value=email; dbShow('signin'); setMsg(why,true);
       } else setMsg(netError(status,r,'Could not start the game.'),true);
+    });
+  };
+
+  /* Transfer: the chosen account.json goes to the server exactly as it is on disk. */
+  var API_TRANSFER=SECURE_HOST+"/api/launcher/transfer-request";
+  var TRANSFER_MAX_BYTES=2000000;
+  function transferPath(){ var f=$('transferFile'); return f?String(f.value||''):''; }
+  window.dbTransferChoose=function(){ try{ $('transferFile').click(); }catch(e){ setMsg('Could not open the file picker: '+e.message,true); } };
+  window.dbTransferPicked=function(){ var p=transferPath(); $('transferName').innerHTML=p?esc(p.replace(/^.*[\\\/]/,'')):'No file chosen'; setMsg(''); };
+  function readExport(path){
+    var fso=new ActiveXObject('Scripting.FileSystemObject');
+    if(!fso.FileExists(path)) throw new Error('That file could not be found.');
+    if(fso.GetFile(path).Size>TRANSFER_MAX_BYTES) throw new Error('That file is too large to be an account export.');
+    var st=new ActiveXObject('ADODB.Stream'); st.Type=2; st.Charset='utf-8'; st.Open(); st.LoadFromFile(path);
+    var text=st.ReadText(); st.Close(); return text;
+  }
+  /* The page runs in IE11 mode (X-UA-Compatible IE=edge), which has JSON. */
+  function jsonString(s){ return JSON.stringify(s); }
+  window.dbTransferSend=function(){
+    if(busy||!session) return;
+    var path=transferPath();
+    if(!path){ setMsg('Choose your account.json first.',true); return; }
+    var text;
+    try{ text=readExport(path); }catch(e){ setMsg(e.message,true); return; }
+    setBusy(true); setMsg('Sending your request...');
+    var name=path.replace(/^.*[\\\/]/,'');
+    var body='{"token":'+jsonString(session.token)+',"fileName":'+jsonString(name)+',"exportText":'+jsonString(text)+'}';
+    post(API_TRANSFER,body,function(status,r){
+      setBusy(false);
+      if(status==200&&r.ok){
+        var names=(r.characters&&r.characters.length)?r.characters.join(', '):'your character';
+        setMsg('Request sent for '+esc(names)+'! The staff will review it and add the character to this account. Request: '+esc(r.requestId));
+        try{ $('transferFile').value=''; }catch(e){} $('transferName').innerHTML='No file chosen';
+        return;
+      }
+      if(status==401){ var email=session.email; session=null; clearSession(); $('signinEmail').value=email; dbShow('signin'); setMsg((r&&r.error)||'Please sign in again.',true); return; }
+      setMsg(netError(status,r,'Could not send the request.'),true);
     });
   };
 
