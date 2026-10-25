@@ -298,6 +298,34 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
   document.onkeydown=function(e){ var ev=e||window.event; if(ev.keyCode!=13) return;
     if(view=='signin') dbSignIn(); else if(view=='register') dbRegister(); else if(view=='signedin') dbPlay(); };
 
+  /* Refresh on the game's "server is down" box (GameReload in the game) closes the game and leaves
+     a relaunch flag: AIR writes %APPDATA%\DBRevamped\relaunch.flag, the Flash projector its shared
+     object dbRelaunch.sol. Seeing one, the launcher waits for the game to be gone and presses Play
+     again, so the player is back on their characters, signed in. The game only leaves the flag
+     while launcher-alive holds a recent time, which this writes every 2 seconds. Flags already
+     there when the launcher opens are old ones and are cleared unread. */
+  var ALIVE_FILE=SESSION_DIR?SESSION_DIR+'\\launcher-alive':null, AIR_FLAG=SESSION_DIR?SESSION_DIR+'\\relaunch.flag':null, relaunching=false;
+  function soRoot(){ try{ return new ActiveXObject('WScript.Shell').ExpandEnvironmentStrings('%APPDATA%')+'\\Macromedia\\Flash Player\\#SharedObjects'; }catch(e){ return null; } }
+  function touchAlive(){ try{ if(!ALIVE_FILE) return; var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!fso.FolderExists(SESSION_DIR)) fso.CreateFolder(SESSION_DIR); var ts=fso.CreateTextFile(ALIVE_FILE,true); ts.Write(String(new Date().getTime())); ts.Close(); }catch(e){} }
+  function takeRelaunchFlag(){ var found=false; try{ var fso=new ActiveXObject('Scripting.FileSystemObject');
+      var take=function(p){ if(p&&fso.FileExists(p)){ try{ fso.DeleteFile(p,true); }catch(e){} found=true; } };
+      take(AIR_FLAG);
+      var root=soRoot(); if(root&&fso.FolderExists(root)){ for(var a=new Enumerator(fso.GetFolder(root).SubFolders);!a.atEnd();a.moveNext()){ for(var b=new Enumerator(a.item().SubFolders);!b.atEnd();b.moveNext()){ take(b.item().Path+'\\dbRelaunch.sol'); } } }
+    }catch(e){} return found; }
+  /* Our own game, by its exact path: the AIR app or the projector beside this launcher. */
+  function gameRunning(){ try{ var mine=[AIR_EXE.toLowerCase(),PROJ.toLowerCase()];
+      var q=GetObject('winmgmts:\\\\.\\root\\cimv2').ExecQuery("select ExecutablePath from Win32_Process where Name='flashplayer.exe' or Name='DB Revamped.exe'");
+      for(var e=new Enumerator(q);!e.atEnd();e.moveNext()){ var at=String(e.item().ExecutablePath||'').toLowerCase(); if(at==mine[0]||at==mine[1]) return true; } }catch(e){} return false; }
+  function relaunchWhenGone(tries){
+    if(gameRunning()){
+      if(tries<20){ window.setTimeout(function(){ relaunchWhenGone(tries+1); },500); return; }
+      relaunching=false; setMsg('Close the game, then press Play.'); return;
+    }
+    window.setTimeout(function(){ relaunching=false; if(!session){ setMsg('Sign in and press Play to start again.'); return; } if(view!='signedin') dbShow('signedin'); dbPlay(); },800);
+  }
+  function watchGame(){ touchAlive(); if(!relaunching&&takeRelaunchFlag()){ relaunching=true; setMsg('Restarting the game...'); relaunchWhenGone(0); } }
+  takeRelaunchFlag(); watchGame(); window.setInterval(watchGame,2000);
+
   (function(){ var btn=$('dbToolsBtn'), menu=$('dbToolsMenu');
     if(btn&&menu){ btn.onclick=function(e){ var ev=e||window.event; if(ev.stopPropagation)ev.stopPropagation(); else ev.cancelBubble=true;
         menu.className=(menu.className.indexOf('open')!==-1)?'db-tools-menu':'db-tools-menu open'; };
