@@ -225,6 +225,9 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
   };
 
   window.dbPlay=function(){
+    /* The game's Refresh signs itself in with the saved token and saves the rotated one, so the
+       file can be newer than what this launcher read when it opened. */
+    var saved=loadSession(); if(saved&&session) session=saved;
     if(busy||!session) return;
     setBusy(true); setMsg('Starting the game...');
     post(API_PLAY,'{"token":"'+jesc(session.token)+'"}',function(status,r){
