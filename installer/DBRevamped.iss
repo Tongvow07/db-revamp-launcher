@@ -5,13 +5,12 @@
 ;
 ; Installs per user (no admin prompt) into %LOCALAPPDATA%\DB Revamped, with a Start Menu entry,
 ; an optional desktop shortcut and an entry in Settings > Apps for uninstalling. The launcher is
-; DungeonBlitzR.hta run by Windows' own mshta.exe (opened by DB Revamped Launcher.exe, for the
-; taskbar icon); its screen (ui.js) is downloaded from the
+; DungeonBlitzR.hta run by Windows' own mshta.exe; its screen (ui.js) is downloaded from the
 ; server at every start, so this installer rarely needs rebuilding: only when the shell, the
 ; Flash player, the AIR engine or the icon change.
 
 #define AppName "DB Revamped"
-#define AppVersion "1.1.1"
+#define AppVersion "1.1.2"
 #define AppPublisher "DB Revamped"
 #define AppUrl "https://dungeonblitzv.duckdns.org"
 
@@ -54,16 +53,20 @@ Source: "..\air\bundle\*"; DestDir: "{app}\air"; Flags: ignoreversion recursesub
 ; Offline fallback for the launcher screen; the live one comes from the server.
 Source: "..\launcher-assets\ui.js"; DestDir: "{app}\launcher-assets"; Flags: ignoreversion
 Source: "db-revamped.ico"; DestDir: "{app}"; Flags: ignoreversion
-; Opens the launcher and gives its taskbar button our icon (build-launcher-start.ps1); mshta on its
-; own shows its generic icon there.
-Source: "DB Revamped Launcher.exe"; DestDir: "{app}"; Flags: ignoreversion
+
+[InstallDelete]
+; Installer 1.1.1's starter, which opened mshta to give the taskbar button our icon. Windows
+; Defender took it for Trojan:Win32/Bearfoos.B!ml (a small unsigned program starting mshta) and
+; removed it, with the Start Menu shortcut, on players' PCs (2026-10-27). The shortcuts open mshta
+; directly again; the taskbar shows mshta's own icon.
+Type: files; Name: "{app}\DB Revamped Launcher.exe"
 
 [Icons]
-Name: "{autoprograms}\{#AppName}"; Filename: "{app}\DB Revamped Launcher.exe"; WorkingDir: "{app}"; IconFilename: "{app}\db-revamped.ico"; Comment: "Play DB Revamped"
-Name: "{autodesktop}\{#AppName}"; Filename: "{app}\DB Revamped Launcher.exe"; WorkingDir: "{app}"; IconFilename: "{app}\db-revamped.ico"; Comment: "Play DB Revamped"; Tasks: desktopicon
+Name: "{autoprograms}\{#AppName}"; Filename: "{sys}\mshta.exe"; Parameters: """{app}\DungeonBlitzR.hta"""; WorkingDir: "{app}"; IconFilename: "{app}\db-revamped.ico"; Comment: "Play DB Revamped"
+Name: "{autodesktop}\{#AppName}"; Filename: "{sys}\mshta.exe"; Parameters: """{app}\DungeonBlitzR.hta"""; WorkingDir: "{app}"; IconFilename: "{app}\db-revamped.ico"; Comment: "Play DB Revamped"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\DB Revamped Launcher.exe"; WorkingDir: "{app}"; Description: "Start {#AppName} now"; Flags: postinstall nowait skipifsilent
+Filename: "{sys}\mshta.exe"; Parameters: """{app}\DungeonBlitzR.hta"""; WorkingDir: "{app}"; Description: "Start {#AppName} now"; Flags: postinstall nowait skipifsilent
 
 [UninstallDelete]
 ; The remembered sign-in (a device token); uninstalling signs this PC out.
