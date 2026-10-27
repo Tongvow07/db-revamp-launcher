@@ -1,17 +1,28 @@
-﻿; DB Revamped launcher installer (Inno Setup 6).
+﻿; DB Revamped installer (Inno Setup 6).
 ;
 ; Build:  "%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe" installer\DBRevamped.iss
 ; Output: dist\DB Revamped Setup.exe
 ;
 ; Installs per user (no admin prompt) into %LOCALAPPDATA%\DB Revamped, with a Start Menu entry,
-; an optional desktop shortcut and an entry in Settings > Apps for uninstalling. The launcher is
-; DungeonBlitzR.hta run by Windows' own mshta.exe; its screen is launcher-assets\ui.js, installed
-; with it. A change to the launcher screen means a new installer.
+; an optional desktop shortcut and an entry in Settings > Apps for uninstalling.
+;
+; The shortcuts open the game directly: the AIR app (air\DB Revamped.exe) on the game's address.
+; The game has its own sign-in, registration and account switch, and remembers the sign-in. The
+; server redirects the plain address to the current client revision without caching, so every
+; start loads the current game.
+;
+; From 1.2.0 there is no launcher window. The old one was an HTA run by Windows' mshta.exe, which
+; downloaded its screen and ran it; Windows Defender took that for a trojan loader on players' PCs
+; (Trojan:Win32/Bearfoos.B!ml, Behavior:Win32/Execution.A!ml, 2026-10-27). Nothing here runs a
+; script host, and setup starts nothing when it finishes. The Flash projector is gone too: the
+; copy we shipped had Adobe's signature removed by the 4 GB patch, which reads as a tampered file.
 
 #define AppName "DB Revamped"
-#define AppVersion "1.1.3"
+#define AppVersion "1.2.0"
 #define AppPublisher "DB Revamped"
 #define AppUrl "https://dungeonblitzv.duckdns.org"
+; Plain http: the game reads its http files, which an https page may not.
+#define GameUrl "http://dungeonblitzv.duckdns.org/p/cbp/DungeonBlitz.swf"
 
 [Setup]
 AppId={{42173429-E4AE-4E5A-B637-FEB103416E65}
@@ -44,29 +55,25 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Shortcuts:"
 
 [Files]
-Source: "..\DungeonBlitzR.hta"; DestDir: "{app}"; Flags: ignoreversion
-Source: "..\flashplayer.exe"; DestDir: "{app}"; Flags: ignoreversion
-; The AIR engine (node air\build.js): the game in AIR's runtime, up to 100 fps. The launcher starts
-; it instead of flashplayer.exe unless the player switched back to Flash.
+; The game in Adobe AIR's runtime (node air\build.js), up to 100 fps.
 Source: "..\air\bundle\*"; DestDir: "{app}\air"; Flags: ignoreversion recursesubdirs createallsubdirs
-; The launcher screen, loaded by DungeonBlitzR.hta.
-Source: "..\launcher-assets\ui.js"; DestDir: "{app}\launcher-assets"; Flags: ignoreversion
 Source: "db-revamped.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [InstallDelete]
-; Installer 1.1.1's starter, which opened mshta to give the taskbar button our icon. Windows
-; Defender took it for Trojan:Win32/Bearfoos.B!ml (a small unsigned program starting mshta) and
-; removed it, with the Start Menu shortcut, on players' PCs (2026-10-27). The shortcuts open mshta
-; directly again; the taskbar shows mshta's own icon.
+; What earlier installers put here: the mshta launcher, its screen, its 1.1.1 starter, the
+; signature-stripped Flash projector, and the old batch file and readme.
+Type: files; Name: "{app}\DungeonBlitzR.hta"
 Type: files; Name: "{app}\DB Revamped Launcher.exe"
+Type: files; Name: "{app}\flashplayer.exe"
+Type: files; Name: "{app}\Play DB Revamped.bat"
+Type: files; Name: "{app}\README.txt"
+Type: files; Name: "{app}\app.ico"
+Type: filesandordirs; Name: "{app}\launcher-assets"
 
 [Icons]
-Name: "{autoprograms}\{#AppName}"; Filename: "{sys}\mshta.exe"; Parameters: """{app}\DungeonBlitzR.hta"""; WorkingDir: "{app}"; IconFilename: "{app}\db-revamped.ico"; Comment: "Play DB Revamped"
-Name: "{autodesktop}\{#AppName}"; Filename: "{sys}\mshta.exe"; Parameters: """{app}\DungeonBlitzR.hta"""; WorkingDir: "{app}"; IconFilename: "{app}\db-revamped.ico"; Comment: "Play DB Revamped"; Tasks: desktopicon
-
-; No "Start now" at the end: setup starting mshta was itself flagged by Defender
-; (Behavior:Win32/Execution.A!ml, 2026-10-27). Players open the launcher from its shortcut.
+Name: "{autoprograms}\{#AppName}"; Filename: "{app}\air\DB Revamped.exe"; Parameters: """{#GameUrl}"""; WorkingDir: "{app}\air"; IconFilename: "{app}\db-revamped.ico"; Comment: "Play DB Revamped"
+Name: "{autodesktop}\{#AppName}"; Filename: "{app}\air\DB Revamped.exe"; Parameters: """{#GameUrl}"""; WorkingDir: "{app}\air"; IconFilename: "{app}\db-revamped.ico"; Comment: "Play DB Revamped"; Tasks: desktopicon
 
 [UninstallDelete]
-; The remembered sign-in (a device token); uninstalling signs this PC out.
+; The old launcher's remembered sign-in, if any.
 Type: filesandordirs; Name: "{userappdata}\DBRevamped"
