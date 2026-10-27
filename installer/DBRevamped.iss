@@ -5,12 +5,11 @@
 ;
 ; Installs per user (no admin prompt) into %LOCALAPPDATA%\DB Revamped, with a Start Menu entry,
 ; an optional desktop shortcut and an entry in Settings > Apps for uninstalling. The launcher is
-; DungeonBlitzR.hta run by Windows' own mshta.exe; its screen (ui.js) is downloaded from the
-; server at every start, so this installer rarely needs rebuilding: only when the shell, the
-; Flash player, the AIR engine or the icon change.
+; DungeonBlitzR.hta run by Windows' own mshta.exe; its screen is launcher-assets\ui.js, installed
+; with it. A change to the launcher screen means a new installer.
 
 #define AppName "DB Revamped"
-#define AppVersion "1.1.2"
+#define AppVersion "1.1.3"
 #define AppPublisher "DB Revamped"
 #define AppUrl "https://dungeonblitzv.duckdns.org"
 
@@ -50,7 +49,7 @@ Source: "..\flashplayer.exe"; DestDir: "{app}"; Flags: ignoreversion
 ; The AIR engine (node air\build.js): the game in AIR's runtime, up to 100 fps. The launcher starts
 ; it instead of flashplayer.exe unless the player switched back to Flash.
 Source: "..\air\bundle\*"; DestDir: "{app}\air"; Flags: ignoreversion recursesubdirs createallsubdirs
-; Offline fallback for the launcher screen; the live one comes from the server.
+; The launcher screen, loaded by DungeonBlitzR.hta.
 Source: "..\launcher-assets\ui.js"; DestDir: "{app}\launcher-assets"; Flags: ignoreversion
 Source: "db-revamped.ico"; DestDir: "{app}"; Flags: ignoreversion
 
@@ -65,8 +64,8 @@ Type: files; Name: "{app}\DB Revamped Launcher.exe"
 Name: "{autoprograms}\{#AppName}"; Filename: "{sys}\mshta.exe"; Parameters: """{app}\DungeonBlitzR.hta"""; WorkingDir: "{app}"; IconFilename: "{app}\db-revamped.ico"; Comment: "Play DB Revamped"
 Name: "{autodesktop}\{#AppName}"; Filename: "{sys}\mshta.exe"; Parameters: """{app}\DungeonBlitzR.hta"""; WorkingDir: "{app}"; IconFilename: "{app}\db-revamped.ico"; Comment: "Play DB Revamped"; Tasks: desktopicon
 
-[Run]
-Filename: "{sys}\mshta.exe"; Parameters: """{app}\DungeonBlitzR.hta"""; WorkingDir: "{app}"; Description: "Start {#AppName} now"; Flags: postinstall nowait skipifsilent
+; No "Start now" at the end: setup starting mshta was itself flagged by Defender
+; (Behavior:Win32/Execution.A!ml, 2026-10-27). Players open the launcher from its shortcut.
 
 [UninstallDelete]
 ; The remembered sign-in (a device token); uninstalling signs this PC out.

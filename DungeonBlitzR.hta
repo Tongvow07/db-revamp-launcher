@@ -12,23 +12,18 @@
 <body>
 <div id="root"><div id="boot">Loading DB Revampedâ€¦</div></div>
 <script language="JScript">
-/* Thin, stable shell. The real UI lives in ui.js on the server, so updates reach every
-   player automatically with no re-download. A local copy under launcher-assets/ is the
-   offline fallback. The shell never needs changing. */
+/* Thin shell. The UI is launcher-assets/ui.js, installed beside this file and loaded as a plain
+   script. It used to be downloaded from the server and eval'd at every start, which Windows
+   Defender's behaviour monitoring took for a trojan loader (Behavior:Win32/Execution.A!ml,
+   Trojan:Win32/Bearfoos.B!ml, 2026-10-27): the launcher now runs only code that was installed. */
 var HOST="https://dungeonblitzv.duckdns.org";
-var UI_URL=HOST+"/launcher/ui.js";
 function newXhr(){ try{return new ActiveXObject("MSXML2.ServerXMLHTTP.6.0");}catch(e){try{return new ActiveXObject("MSXML2.ServerXMLHTTP");}catch(e2){return new ActiveXObject("Microsoft.XMLHTTP");}} }
 function hereDir(){ var p=decodeURIComponent(window.location.pathname).replace(/^\/+/,'').replace(/\//g,'\\'); var i=p.lastIndexOf('\\'); return i>0?p.substring(0,i):'.'; }
 var PROJ=hereDir()+"\\flashplayer.exe";
 function fail(msg){ document.getElementById('root').innerHTML='<div id="boot" style="color:#e58a7f">'+msg+'</div>'; }
-function loadUI(){
-  var code=null;
-  try{ var x=newXhr(); x.open("GET",UI_URL+"?t="+new Date().getTime(),false); x.send(); if(x.status==200&&x.responseText.length>50) code=x.responseText; }catch(e){}
-  if(!code){ try{ var fso=new ActiveXObject("Scripting.FileSystemObject"); var ts=fso.OpenTextFile(hereDir()+"\\launcher-assets\\ui.js",1,false,-2); code=ts.ReadAll(); ts.Close(); }catch(e2){} }
-  if(code){ try{ eval(code); }catch(e3){ fail("Launcher error: "+e3.message); } }
-  else fail("Can't reach the server. Check your connection and reopen.");
-}
-window.onload=function(){ try{window.resizeTo(474,672);window.moveTo((screen.width-474)/2,Math.max(0,(screen.availHeight-672)/2));}catch(e){} loadUI(); };
+try{window.resizeTo(474,672);window.moveTo((screen.width-474)/2,Math.max(0,(screen.availHeight-672)/2));}catch(e){}
+window.onerror=function(msg){ fail("Launcher error: "+msg); return true; };
 </script>
+<script language="JScript" src="launcher-assets/ui.js"></script>
 </body>
 </html>
