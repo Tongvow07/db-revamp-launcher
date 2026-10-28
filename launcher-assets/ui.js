@@ -293,7 +293,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
   }
   /* Which of the three kinds a file is, from its JSON, or null. The server applies the same tests. */
   function transferKind(text){
-    var o; try{ o=JSON.parse(text.replace(/^FEFF/,'')); }catch(e){ return null; }
+    var o; try{ o=JSON.parse(text.replace(/^\uFEFF/,'')); }catch(e){ return null; }
     if(!o||typeof o!='object') return null;
     if(o.schema=='dungeon-blitz-migration/1') return 'account export';
     if(o.identity&&typeof o.identity=='object'&&o.equippedGears) return 'character save';
