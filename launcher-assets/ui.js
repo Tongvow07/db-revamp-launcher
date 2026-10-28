@@ -121,7 +121,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
     '</div>',
     '<div class="engine-hint" id="engineHint"></div>',
     '</div>',
-    '<button type="button" class="btn btn-transfer" onclick="dbShow(\'transfer\')">Already have account progress in the Minesa Server group? Worry not, upload your export files here and we will do the rest for you to get your account data!</button>',
+    '<button type="button" class="btn btn-transfer" onclick="dbShow(\'transfer\')">Played on another Dungeon Blitz server? Upload your save file here and we move your characters to your account.</button>',
         '</div>',
     /* Transfer: send a save file for the staff to review. Three kinds are accepted (the server
        normalizes all three): the account export, the character save and the packets capture. */
