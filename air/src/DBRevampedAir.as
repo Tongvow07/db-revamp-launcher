@@ -33,6 +33,9 @@ package
    [SWF(width="1152", height="768", backgroundColor="#000000", frameRate="60")]
    public class DBRevampedAir extends Sprite
    {
+      /** What the app opens when started without a game URL (installer\DBRevamped.iss GameUrl). */
+      private static const LIVE_GAME:String = "http://dungeonblitzv.duckdns.org/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp";
+
       private var started:Boolean = false;
       private var status:TextField;
       private var page:String = "";
@@ -72,8 +75,9 @@ package
          }
          if (!page)
          {
-            status.text = "Start DB Revamped from its launcher.";
-            return;
+            // Opened on its own (the Mac app has no launcher): the live game, which signs in on
+            // its own login screen the way the web page does.
+            page = LIVE_GAME;
          }
          started = true;
          status.text = "Loading DB Revamped...";
