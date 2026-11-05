@@ -40,6 +40,8 @@
    Text:             .dbui-text (cream), .dbui-dim (muted, for hints and notices), .dbui-notice
                      (small cream note), .dbui-gold (emphasis; b and strong are gold too),
                      .dbui-cyan, .dbui-msg (green: a status message), .dbui-msg-error (red)
+   .dbui-logo        the game's own Dungeon Blitz logo lettering (its loading screen's), shown whole;
+                     set its font-size to size it
    .dbui-preload     put one anywhere: it loads the Over, Click and ticked pictures up front
 */
 
@@ -122,6 +124,9 @@
 .dbui-cyan{color:#0099cc}
 .dbui-msg{color:#7cff7c}
 .dbui-msg-error{color:#ff5a4a}
+
+/* The game's logo lettering: 464 x 205 PNG px. */
+.dbui-logo{display:inline-block;width:9.4em;height:4.15em;vertical-align:middle;background:url('logo-letters.png') no-repeat center;background-size:100% 100%}
 
 /* Loaded up front so a hover or a tick never shows an empty picture. */
 .dbui-preload{position:absolute;left:-200px;top:-200px;width:1px;height:1px;overflow:hidden;background-image:url('button-over.png'),url('button-click.png'),url('button-copper-over.png'),url('button-copper-click.png'),url('button-slate-over.png'),url('button-slate-click.png'),url('radio-over.png'),url('radio-on.png'),url('radio-on-over.png'),url('check-on.png'),url('dot-on.png'),url('menu-item-over.png'),url('hover-rim.png')}

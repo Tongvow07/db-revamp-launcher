@@ -687,6 +687,353 @@
       "sha256": "b36ed901dc02f5e6a0aa0a34d28fc89a4dfbb83219002ab8f269e6c74d7d849a"
     },
     {
+      "file": "dbui/logo-letters.png",
+      "what": "the lettering of the game's Dungeon Blitz logo (the loading screen's dragon logo): the letter layer of its plate's shape, without the dragon, the teal stone and two teal chips",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoadingScreen",
+        "id": 192,
+        "frame": 1,
+        "path": [
+          1
+        ],
+        "childId": 170,
+        "parts": {
+          "kept": 1,
+          "left_out": 4
+        }
+      },
+      "scale": 3,
+      "width": 464,
+      "height": 205,
+      "slice": null,
+      "sha256": "991d03f23914f1d67784947cbba91206ccb1dd51060e20ebb35403c2fd6b2f7b"
+    },
+    {
+      "file": "dbui/logo-letter-1-d.png",
+      "what": "one letter of the game's Dungeon Blitz logo lettering (the loading screen's dragon logo): the letter D (row 1); turn it -29.71 degrees back to stand it upright",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoadingScreen",
+        "id": 192,
+        "frame": 1,
+        "path": [
+          1
+        ],
+        "childId": 170,
+        "letter": "D",
+        "row": 1,
+        "index": 1
+      },
+      "scale": 3,
+      "width": 86,
+      "height": 103,
+      "slice": null,
+      "letter": {
+        "char": "D",
+        "row": 1,
+        "turn": -29.71
+      },
+      "sha256": "eba7f0916ad168a5a2eb7d2c72165794136c9e17cb10589a9a8ca745bfd71173"
+    },
+    {
+      "file": "dbui/logo-letter-2-u.png",
+      "what": "one letter of the game's Dungeon Blitz logo lettering (the loading screen's dragon logo): the letter U (row 1); turn it -19.16 degrees back to stand it upright",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoadingScreen",
+        "id": 192,
+        "frame": 1,
+        "path": [
+          1
+        ],
+        "childId": 170,
+        "letter": "U",
+        "row": 1,
+        "index": 2
+      },
+      "scale": 3,
+      "width": 69,
+      "height": 86,
+      "slice": null,
+      "letter": {
+        "char": "U",
+        "row": 1,
+        "turn": -19.16
+      },
+      "sha256": "eddd4dfabaa654867fdb3aff7c15cea6f68b56b99ac37c4fc0b7cd966035c22f"
+    },
+    {
+      "file": "dbui/logo-letter-3-n.png",
+      "what": "one letter of the game's Dungeon Blitz logo lettering (the loading screen's dragon logo): the letter N (row 1); turn it -10.18 degrees back to stand it upright",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoadingScreen",
+        "id": 192,
+        "frame": 1,
+        "path": [
+          1
+        ],
+        "childId": 170,
+        "letter": "N",
+        "row": 1,
+        "index": 3
+      },
+      "scale": 3,
+      "width": 67,
+      "height": 92,
+      "slice": null,
+      "letter": {
+        "char": "N",
+        "row": 1,
+        "turn": -10.18
+      },
+      "sha256": "165656b60491da3bfbc0b5ac9ea06ab281ed94a56b4a1024520a153329670d41"
+    },
+    {
+      "file": "dbui/logo-letter-4-g.png",
+      "what": "one letter of the game's Dungeon Blitz logo lettering (the loading screen's dragon logo): the letter G (row 1); turn it -0.26 degrees back to stand it upright",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoadingScreen",
+        "id": 192,
+        "frame": 1,
+        "path": [
+          1
+        ],
+        "childId": 170,
+        "letter": "G",
+        "row": 1,
+        "index": 4
+      },
+      "scale": 3,
+      "width": 63,
+      "height": 96,
+      "slice": null,
+      "letter": {
+        "char": "G",
+        "row": 1,
+        "turn": -0.26
+      },
+      "sha256": "bfa1222ba1d9e6240782689ebefdab188b86b83cc8e261a005754be98fbb0bc5"
+    },
+    {
+      "file": "dbui/logo-letter-5-e.png",
+      "what": "one letter of the game's Dungeon Blitz logo lettering (the loading screen's dragon logo): the letter E (row 1); turn it 10.31 degrees back to stand it upright",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoadingScreen",
+        "id": 192,
+        "frame": 1,
+        "path": [
+          1
+        ],
+        "childId": 170,
+        "letter": "E",
+        "row": 1,
+        "index": 5
+      },
+      "scale": 3,
+      "width": 68,
+      "height": 94,
+      "slice": null,
+      "letter": {
+        "char": "E",
+        "row": 1,
+        "turn": 10.31
+      },
+      "sha256": "3f2c6d2ae9478f90f48d277bad4977bec303b432cdfd64bfc3e28f56e4775670"
+    },
+    {
+      "file": "dbui/logo-letter-6-o.png",
+      "what": "one letter of the game's Dungeon Blitz logo lettering (the loading screen's dragon logo): the letter O (row 1); turn it 18.93 degrees back to stand it upright",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoadingScreen",
+        "id": 192,
+        "frame": 1,
+        "path": [
+          1
+        ],
+        "childId": 170,
+        "letter": "O",
+        "row": 1,
+        "index": 6
+      },
+      "scale": 3,
+      "width": 59,
+      "height": 85,
+      "slice": null,
+      "letter": {
+        "char": "O",
+        "row": 1,
+        "turn": 18.93
+      },
+      "sha256": "1fb5db5cd432e004e8d7186169de178fec2721d2b11727074ed6ebd64a2800fa"
+    },
+    {
+      "file": "dbui/logo-letter-7-n.png",
+      "what": "one letter of the game's Dungeon Blitz logo lettering (the loading screen's dragon logo): the letter N (row 1); turn it 29.58 degrees back to stand it upright",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoadingScreen",
+        "id": 192,
+        "frame": 1,
+        "path": [
+          1
+        ],
+        "childId": 170,
+        "letter": "N",
+        "row": 1,
+        "index": 7
+      },
+      "scale": 3,
+      "width": 98,
+      "height": 110,
+      "slice": null,
+      "letter": {
+        "char": "N",
+        "row": 1,
+        "turn": 29.58
+      },
+      "sha256": "4cafeac5e8d6d292bceed2125c90f04c25d03dda7b08b18bbda817d3f6426d24"
+    },
+    {
+      "file": "dbui/logo-letter-8-b.png",
+      "what": "one letter of the game's Dungeon Blitz logo lettering (the loading screen's dragon logo): the letter B (row 2); turn it -21.34 degrees back to stand it upright",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoadingScreen",
+        "id": 192,
+        "frame": 1,
+        "path": [
+          1
+        ],
+        "childId": 170,
+        "letter": "B",
+        "row": 2,
+        "index": 8
+      },
+      "scale": 3,
+      "width": 74,
+      "height": 79,
+      "slice": null,
+      "letter": {
+        "char": "B",
+        "row": 2,
+        "turn": -21.34
+      },
+      "sha256": "eedeabf05bc1c55f6e2558927b203aa00462a79be058fe5b5cf37bb7f1ab27d3"
+    },
+    {
+      "file": "dbui/logo-letter-9-l.png",
+      "what": "one letter of the game's Dungeon Blitz logo lettering (the loading screen's dragon logo): the letter L (row 2); turn it -10.53 degrees back to stand it upright",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoadingScreen",
+        "id": 192,
+        "frame": 1,
+        "path": [
+          1
+        ],
+        "childId": 170,
+        "letter": "L",
+        "row": 2,
+        "index": 9
+      },
+      "scale": 3,
+      "width": 62,
+      "height": 78,
+      "slice": null,
+      "letter": {
+        "char": "L",
+        "row": 2,
+        "turn": -10.53
+      },
+      "sha256": "3e838678063a78756330c9ee3e95243ddf00a1b5d784961b4e02701e5b16d93f"
+    },
+    {
+      "file": "dbui/logo-letter-10-i.png",
+      "what": "one letter of the game's Dungeon Blitz logo lettering (the loading screen's dragon logo): the letter I (row 2); turn it -1.67 degrees back to stand it upright",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoadingScreen",
+        "id": 192,
+        "frame": 1,
+        "path": [
+          1
+        ],
+        "childId": 170,
+        "letter": "I",
+        "row": 2,
+        "index": 10
+      },
+      "scale": 3,
+      "width": 35,
+      "height": 81,
+      "slice": null,
+      "letter": {
+        "char": "I",
+        "row": 2,
+        "turn": -1.67
+      },
+      "sha256": "1682e0e375eac67ef821b3f6acbf1a32cf02d37eaae6a04f45a9060b45e548ad"
+    },
+    {
+      "file": "dbui/logo-letter-11-t.png",
+      "what": "one letter of the game's Dungeon Blitz logo lettering (the loading screen's dragon logo): the letter T (row 2); turn it 8.55 degrees back to stand it upright",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoadingScreen",
+        "id": 192,
+        "frame": 1,
+        "path": [
+          1
+        ],
+        "childId": 170,
+        "letter": "T",
+        "row": 2,
+        "index": 11
+      },
+      "scale": 3,
+      "width": 59,
+      "height": 78,
+      "slice": null,
+      "letter": {
+        "char": "T",
+        "row": 2,
+        "turn": 8.55
+      },
+      "sha256": "a1d37dfe74749ca0c9d1791e690005e8eec5e9df754e73ce223a2350306c939e"
+    },
+    {
+      "file": "dbui/logo-letter-12-z.png",
+      "what": "one letter of the game's Dungeon Blitz logo lettering (the loading screen's dragon logo): the letter Z (row 2); turn it 18.71 degrees back to stand it upright",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoadingScreen",
+        "id": 192,
+        "frame": 1,
+        "path": [
+          1
+        ],
+        "childId": 170,
+        "letter": "Z",
+        "row": 2,
+        "index": 12
+      },
+      "scale": 3,
+      "width": 74,
+      "height": 84,
+      "slice": null,
+      "letter": {
+        "char": "Z",
+        "row": 2,
+        "turn": 18.71
+      },
+      "sha256": "9cbca9e070002083045b48ecbcb198691d4c63e59c040c20063aa84a0a0858c1"
+    },
+    {
       "file": "dbui/hover-rim.png",
       "what": "the cream rim the game lights round a button under the pointer (_ButtonFrameOver01)",
       "source": {
@@ -705,6 +1052,26 @@
         28
       ],
       "sha256": "bf5752deec9adc4adf6c985ac8e7056bb903beddaecba06343c13342f378d7f7"
+    },
+    {
+      "file": "dbui/stone.png",
+      "what": "the cracked stone slab of the game's windows (_WindowBaseOldStone02)",
+      "source": {
+        "swf": "caa/UI_Library.swf",
+        "symbol": "_WindowBaseOldStone02",
+        "id": 102,
+        "frame": 1
+      },
+      "scale": 1,
+      "width": 849,
+      "height": 443,
+      "slice": [
+        20,
+        20,
+        20,
+        20
+      ],
+      "sha256": "090af32fe7b71073b370e51d64ad4aa42fa1a13cbd18d4ca9b70c915c47852da"
     }
   ],
   "fonts": [
@@ -713,8 +1080,7 @@
       "what": "the game's UI font, HelveticaRounded LT Std Bd (the font every game window uses)",
       "source": {
         "swf": "caa/UI_3.swf",
-        "symbol": "a_Font_GameUI",
-        "id": 1
+        "font": "1_a_Font_GameUI_HelveticaRounded LT Std Bd"
       },
       "sha256": "66f65f530e4456284eed86f77a5a14af5e3366047df4577548eda4fe3e963f09"
     },
@@ -723,10 +1089,18 @@
       "what": "the game's UI font, HelveticaRounded LT Std Bd (the font every game window uses)",
       "source": {
         "swf": "caa/UI_3.swf",
-        "symbol": "a_Font_GameUI",
-        "id": 1
+        "font": "1_a_Font_GameUI_HelveticaRounded LT Std Bd"
       },
       "sha256": "ee2b7130b1c4135e5f9407ace407149fd294a91a281de74e840c783adad94085"
+    },
+    {
+      "file": "dbui/db-title-berlin.woff",
+      "what": "Berlin Sans FB Demi, the game's event-banner face (UI_1 a_HalloweenFont); for the launcher title only",
+      "source": {
+        "swf": "cbp/UI_1.swf",
+        "font": "1_a_HalloweenFont_Berlin Sans FB Demi"
+      },
+      "sha256": "69700db7cc68ca529ab87e14aaed1e4be88858d49df6e6955bed523cecde2df8"
     }
   ]
 }

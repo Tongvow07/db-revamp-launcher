@@ -6,6 +6,9 @@
 ; Installs per user (no admin prompt) into %LOCALAPPDATA%\DB Revamped, with a Start Menu entry,
 ; an optional desktop shortcut and an entry in Settings > Apps for uninstalling.
 ;
+; 1.4.1 (2026-11-05): the title reads "DUNGEON BLITZ" (the game's banner face in the logo's colours, built
+;        by dbui\title.js) over the painting's own gold "REVAMPED".
+;
 ; 1.4.0 (2026-11-05): every launcher screen is built from the game's own UI art (launcher-assets\dbui, made by
 ;        dbui\build.js) with the game font, and the launcher talks to https://dbrevamped.com. Same
 ;        structure as 1.3.0: mshta runs only the installed ui.js; setup starts nothing.
@@ -36,7 +39,7 @@
 ; "DB Revamped (Classic Flash)" does the same in the Flash projector.
 
 #define AppName "DB Revamped"
-#define AppVersion "1.4.0"
+#define AppVersion "1.4.1"
 #define AppPublisher "DB Revamped"
 #define AppUrl "https://dbrevamped.com"
 ; Plain http: the game reads its http files, which an https page may not.
@@ -77,7 +80,8 @@ Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription
 Source: "..\DungeonBlitzR.hta"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\launcher-assets\ui.js"; DestDir: "{app}\launcher-assets"; Flags: ignoreversion
 ; The DB UI kit the screen is made of: the game's own art, its UI font and dbui.css (node dbui\build.js).
-Source: "..\launcher-assets\dbui\*.png"; DestDir: "{app}\launcher-assets\dbui"; Flags: ignoreversion
+; The title pieces (logo letters, stone) only build the title into ui.js's background (dbui\title.js).
+Source: "..\launcher-assets\dbui\*.png"; DestDir: "{app}\launcher-assets\dbui"; Excludes: "logo-letter*.png,stone.png"; Flags: ignoreversion
 Source: "..\launcher-assets\dbui\db-game-ui.*"; DestDir: "{app}\launcher-assets\dbui"; Flags: ignoreversion
 Source: "..\launcher-assets\dbui\dbui.css"; DestDir: "{app}\launcher-assets\dbui"; Flags: ignoreversion
 ; The game in Adobe AIR's runtime (node air\build.js), up to 100 fps. The launcher's default engine.
