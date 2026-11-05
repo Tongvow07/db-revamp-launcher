@@ -73,10 +73,15 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     ".engine-opt .dbui-btn-text{font-size:.7em;line-height:2.714em;white-space:nowrap}",
     ".engine-opt .dbui-radio{width:1.55em;height:1.55em;margin:-.25em .3em 0 0}",
     ".engine-hint{margin-top:.3em;text-align:center;font-size:.64em;line-height:1.3em}",
+    /* The frame rate under it: three buttons the same way, for the AIR engine only. */
+    ".fps{margin-top:.35em}",
+    ".fps-opt{float:left;width:31.33%;margin:0}",
+    ".fps-opt+.fps-opt{margin-left:3%}",
     ".transfer-btn{margin-top:.55em}",
     /* While a request runs the buttons wait; the AIR choice greys out when AIR is not installed. */
     ".panel .dbui-btn[disabled]{cursor:wait}",
-    ".panel .engine-opt[disabled]{cursor:default;opacity:.5}"
+    ".panel .engine-opt[disabled]{cursor:default;opacity:.5}",
+    ".panel .fps-opt[disabled]{cursor:default;opacity:.5}"
   ].join("\n");
 
   /* Markup helpers for the kit's field and buttons. */
@@ -127,6 +132,14 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     '<div class="engine-row">',
     button('<span class="dbui-radio"></span>Smooth engine (AIR)','dbSetEngine(\'air\')','slate','engineAir','dbui-btn-small engine-opt'),
     button('<span class="dbui-radio"></span>Classic Flash','dbSetEngine(\'flash\')','slate','engineFlash','dbui-btn-small engine-opt'),
+    '</div>',
+    '<div class="fps" id="fpsBox">',
+    '<label class="dbui-label">FRAME RATE</label>',
+    '<div class="engine-row">',
+    button('<span class="dbui-radio"></span>100 fps','dbSetFps(100)','slate','fps100','dbui-btn-small engine-opt fps-opt'),
+    button('<span class="dbui-radio"></span>144 fps','dbSetFps(144)','slate','fps144','dbui-btn-small engine-opt fps-opt'),
+    button('<span class="dbui-radio"></span>240 fps','dbSetFps(240)','slate','fps240','dbui-btn-small engine-opt fps-opt'),
+    '</div>',
     '</div>',
     '<div class="engine-hint dbui-dim" id="engineHint"></div>',
     '</div>',
@@ -229,10 +242,23 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   function useAir(){ return hasAir()&&loadEngine()=='air'; }
   function showEngine(){ var a=$('engineAir'), f=$('engineFlash'), h=$('engineHint'); if(!a||!f) return;
     var air=hasAir(), on=useAir();
-    a.disabled=!air; a.title=air?'Up to 100 fps':'The AIR engine is not installed; run the installer again';
+    a.disabled=!air; a.title=air?'Up to 240 fps':'The AIR engine is not installed; run the installer again';
     var opt='dbui-btn dbui-btn-small engine-opt', lit=' dbui-on', dim=' dbui-btn-slate'; a.className=opt+(on?lit:dim); f.className=opt+(on?dim:lit);
-    if(h) h.innerHTML=(air?'':'AIR is not installed here, so Play uses Classic Flash. ')+'The game itself is downloaded from the server at every start, so both engines run the latest version with every patch.'; }
+    if(h) h.innerHTML=(air?'':'AIR is not installed here, so Play uses Classic Flash. ')+(on?'':'Classic Flash runs at up to 60 fps; the frame rate applies to AIR. ')+'The game itself is downloaded from the server at every start, so both engines run the latest version with every patch.';
+    showFps(on); }
   window.dbSetEngine=function(which){ if(which=='air'&&!hasAir()) return; saveEngine(which=='flash'?'flash':'air'); showEngine(); fitPanel(); };
+
+  /* The frame rate the AIR engine aims for: 100 (the game's own target), 144 or 240, remembered in
+     fps.txt and passed to the game as dbFps (FramePace.as takes 10-240). Flash Player 32 stops at 60,
+     so the buttons grey out with Classic Flash and Play passes nothing. */
+  var FPS_FILE=SESSION_DIR?SESSION_DIR+'\\fps.txt':null;
+  var FPS_CHOICES=[100,144,240];
+  function loadFps(){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(FPS_FILE&&fso.FileExists(FPS_FILE)){ var ts=fso.OpenTextFile(FPS_FILE,1,false); var v=parseInt(ts.ReadAll(),10); ts.Close(); for(var i=0;i<FPS_CHOICES.length;i++) if(FPS_CHOICES[i]==v) return v; } }catch(e){} return 100; }
+  function saveFps(v){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!fso.FolderExists(SESSION_DIR)) fso.CreateFolder(SESSION_DIR); var ts=fso.CreateTextFile(FPS_FILE,true); ts.Write(String(v)); ts.Close(); }catch(e){} }
+  function showFps(air){ var fps=loadFps(), opt='dbui-btn dbui-btn-small engine-opt fps-opt', lit=' dbui-on', dim=' dbui-btn-slate';
+    for(var i=0;i<FPS_CHOICES.length;i++){ var b=$('fps'+FPS_CHOICES[i]); if(!b) continue;
+      b.disabled=!air; b.title=air?'':'For the AIR engine'; b.className=opt+(air&&FPS_CHOICES[i]==fps?lit:dim); } }
+  window.dbSetFps=function(v){ if(!useAir()) return; saveFps(v); showFps(true); };
   window.dbSwitchEngine=function(){ dbSetEngine(useAir()?'flash':'air'); };
 
   function clearSession(){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(SESSION_FILE&&fso.FileExists(SESSION_FILE)) fso.DeleteFile(SESSION_FILE,true); }catch(e){} }
@@ -281,6 +307,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
         /* The game signs itself in with this one-time code (good for two minutes, used once). */
         var url=SWF+'?dbLaunchEmail='+encodeURIComponent(r.email)+'&dbLaunchCode='+r.launchCode;
         var exe=useAir()?AIR_EXE:PROJ;
+        if(useAir()&&loadFps()!=100) url+='&dbFps='+loadFps();
         try{ new ActiveXObject('WScript.Shell').Run('"'+exe+'" "'+url+'"',1,false); setMsg('The game is opening - you are signed in.'); }
         catch(e){ setMsg('Could not start the game: '+e.message,true); }
         window.setTimeout(function(){ setBusy(false); },4000);

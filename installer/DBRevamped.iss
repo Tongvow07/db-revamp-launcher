@@ -6,6 +6,9 @@
 ; Installs per user (no admin prompt) into %LOCALAPPDATA%\DB Revamped, with a Start Menu entry,
 ; an optional desktop shortcut and an entry in Settings > Apps for uninstalling.
 ;
+; 1.4.2 (2026-11-05): a FRAME RATE choice under ENGINE (100 / 144 / 240 fps, AIR only), remembered in
+;        %APPDATA%\DBRevamped\fps.txt and passed to the game as dbFps.
+;
 ; 1.4.1 (2026-11-05): the title reads "DUNGEON BLITZ" (the game's banner face in the logo's colours, built
 ;        by dbui\title.js) over the painting's own gold "REVAMPED".
 ;
@@ -39,7 +42,7 @@
 ; "DB Revamped (Classic Flash)" does the same in the Flash projector.
 
 #define AppName "DB Revamped"
-#define AppVersion "1.4.1"
+#define AppVersion "1.4.2"
 #define AppPublisher "DB Revamped"
 #define AppUrl "https://dbrevamped.com"
 ; Plain http: the game reads its http files, which an https page may not.
