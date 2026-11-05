@@ -19,127 +19,143 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
   var API_FORGET=SECURE_HOST+"/api/auth/launcher/forget";
   var FORGOT_URL=SECURE_HOST+"/lostpw";
   var serverUp=false, busy=false, view='signin', session=null;
+  /* Where launcher-assets is, seen from the page: the HTA loads this file as launcher-assets/ui.js,
+     the local test HTA evals it (no script tag: the default), preview-signin.html loads it as ui.js. */
+  var DBUI=(function(){ if(typeof DBUI_ASSETS=='string') return DBUI_ASSETS;
+    var s=document.getElementsByTagName('script');
+    for(var i=s.length-1;i>=0;i--){ var src=s[i].getAttribute('src')||''; if(/(^|[\/\\])ui\.js(\?.*)?$/i.test(src)) return src.replace(/ui\.js(\?.*)?$/i,''); }
+    return 'launcher-assets/'; })();
   try{ var ar=1280/690; var W=Math.min(1120,screen.availWidth-24); var H=Math.round((W-16)/ar+38);
        if(H>screen.availHeight-24){ H=screen.availHeight-24; W=Math.round((H-38)*ar+16); }
        window.resizeTo(W,H); window.moveTo(Math.max(0,(screen.width-W)/2), Math.max(0,(screen.availHeight-H)/2)); }catch(e){}
 
+  /* The look is the DB UI kit (launcher-assets/dbui/dbui.css: the game's own window, field,
+     button, check, menu and pill art, made by dbui/build.js from the client's UI files), loaded
+     below. What is here only places the launcher's parts over its painted background. Sizes in
+     the panel are in em, which fitPanel scales with the window. */
   var css=[
     "*{box-sizing:border-box;margin:0;padding:0;-ms-user-select:none}",
     "html,body{width:100%;height:100%;overflow:hidden;background:#0d0b09;font-family:Georgia,serif;cursor:default}",
     ".launcher-stage{position:fixed;left:0;top:0;right:0;bottom:0;width:100%;height:100%;background-size:100% 100%;background-position:center center;background-repeat:no-repeat}",
-    ".server-pill{position:absolute;top:1.6%;right:2%;font-family:Tahoma,sans-serif;font-size:11px;color:#e6d8b8;text-shadow:0 1px 3px #000;z-index:25}",
-    ".status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#b04a4a;box-shadow:0 0 6px #b04a4a;margin-right:4px;vertical-align:middle}",
-    ".db-tools-hitbox{position:absolute;left:84.1%;top:6.5%;width:13.9%;height:16.5%;cursor:pointer;z-index:30;border-radius:8px}",
-    ".db-tools-hitbox:hover{background:radial-gradient(circle,rgba(255,215,110,.14) 0%,rgba(255,215,110,0) 75%)}",
-    ".db-tools-menu{display:none;position:absolute;left:84.1%;top:23.5%;width:13.9%;background:linear-gradient(180deg,#1e1813 0%,#110d0a 100%);border:2px solid #b5883b;border-radius:6px;box-shadow:0 10px 25px rgba(0,0,0,.92);overflow:hidden;z-index:35}",
+    /* Server status: the kit's pill with its light. */
+    ".server-pill{position:absolute;top:1.1%;right:1.5%;font-size:12px;z-index:25}",
+    /* DB TOOLS: a hotspot over the painted plate (the game's hover rim round the plate) and the kit's menu. */
+    ".db-tools-hitbox{position:absolute;left:84.1%;top:6.5%;width:13.9%;height:16.5%;z-index:30}",
+    ".db-tools-hitbox .dbui-hover-rim{left:3%;right:-1%;top:32%;bottom:23%}",
+    ".db-tools-menu{display:none;position:absolute;left:84.1%;top:23.5%;width:13.9%;font-size:13px;z-index:35}",
     ".db-tools-menu.open{display:block}",
-    ".db-tools-item{display:block;padding:9px 12px;color:#e8cfa0;font-size:13px;border-bottom:1px solid #2e241b;cursor:pointer;text-align:left;white-space:nowrap}",
-    ".db-tools-item:last-child{border-bottom:none}",
-    ".db-tools-item:hover{background:rgba(212,157,47,.25);color:#fff}",
-    ".db-tools-item span{color:#e09f3e;margin-right:7px}",
-    /* The panel's inside, redrawn so it can change between views. Bounds match the painted frame. */
+    ".db-tools-item span{color:#e09f3e;margin-right:7px;font-family:'Segoe UI Symbol',Arial,sans-serif}",
+    /* The panel: the kit's window, inside the painted rune frame (bounds match it). Its stone
+       reaches a little past the box so no painted parchment shows at its edges; its battlement
+       stands over the frame's top row of runes. */
     ".panel{position:absolute;left:35.9%;top:31.4%;width:28.3%;height:47.6%;z-index:20;font-size:16px}",
-    ".panel-title{position:absolute;left:0;right:0;top:0;height:13.6%;background:linear-gradient(180deg,#221a14 0%,#120d0a 100%);border-bottom:2px solid #8a6326;color:#f3d486;text-align:center;font-size:1.45em;line-height:2.05em;text-shadow:0 2px 3px #000;letter-spacing:.02em}",
-    ".panel-body{position:absolute;left:0;right:0;top:13.6%;bottom:0;overflow:hidden;background:linear-gradient(180deg,#eadbb8 0%,#dcc79f 60%,#cdb486 100%);box-shadow:inset 0 0 1.4em rgba(90,60,20,.55);padding:3.5% 6% 5%}",
+    ".panel.dbui-window{margin:0;padding:0;min-width:0}",
+    ".panel .dbui-frame{left:-.3em;right:-.3em;bottom:-.3em}",
+    ".panel .dbui-title{left:-.3em;right:-.3em}",
+    ".panel-body{position:absolute;left:1.5em;right:1.5em;top:2.3em;bottom:1.35em;padding:0 .2em;overflow:hidden}",
     ".view{display:none}",
     ".view.active{display:block}",
-    ".field-label{display:block;color:#3b2a18;font-size:.78em;font-weight:bold;letter-spacing:.06em;margin:3% 0 1.2%}",
-    ".field{display:block;width:100%;height:2.1em;background:linear-gradient(180deg,#34352e 0%,#4a4b42 100%);border:2px solid #9a7a3c;border-radius:1.1em;padding:0 .9em;color:#f2ead6;font-family:Tahoma,Verdana,sans-serif;font-size:.9em;outline:none;box-shadow:inset 0 2px 4px rgba(0,0,0,.55)}",
-    ".field:focus{border-color:#f5c451;box-shadow:inset 0 2px 4px rgba(0,0,0,.55),0 0 8px rgba(245,196,81,.55)}",
-    ".btn{display:block;width:100%;height:2.25em;margin-top:4%;border:2px solid #5c3b14;border-radius:.45em;font-family:Georgia,serif;font-size:.92em;font-weight:bold;letter-spacing:.05em;cursor:pointer;outline:none;box-shadow:0 2px 0 rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.35)}",
-    ".btn-gold{background:linear-gradient(180deg,#f6d27a 0%,#e0a743 55%,#c48a2c 100%);color:#2d1b08}",
-    ".btn-copper{background:linear-gradient(180deg,#d98a62 0%,#b4603b 55%,#8c4124 100%);color:#fbecd8;text-shadow:0 1px 1px #3a1a0a}",
-    ".btn:hover{filter:brightness(1.08)}",
-    ".btn:active{filter:brightness(.92)}",
-    ".btn[disabled]{filter:grayscale(.6);cursor:wait}",
-    ".msg{min-height:1.2em;margin-top:3%;text-align:center;font-family:Tahoma,sans-serif;font-size:.78em;font-weight:bold;color:#2f5d3a}",
-    ".msg.error{color:#9c2b1c}",
-    ".link{display:block;margin-top:3%;text-align:center;font-family:Tahoma,sans-serif;font-size:.74em;color:#5a3a12;text-decoration:underline;cursor:pointer}",
-    ".link:hover{color:#8a4b0c}",
-    ".who{margin:4% 0 2%;text-align:center;color:#3b2a18;font-size:.85em}",
-    ".note{margin:3% 0 2%;text-align:center;color:#3b2a18;font-family:Tahoma,sans-serif;font-size:.74em;line-height:1.35em}",
-    ".file-name{display:block;margin-top:2%;text-align:center;font-family:Tahoma,sans-serif;font-size:.74em;color:#1f140a;word-wrap:break-word;min-height:1.2em}",
+    ".dbui-label.first{margin-top:0}",
+    ".msg{min-height:1.2em;margin-top:.2em;text-align:center;font-size:.78em;line-height:1.2em}",
+    ".dblink{display:block;margin-top:.35em;text-align:center;font-size:.8em;line-height:1.2em}",
+    ".who{margin:.1em 0 .1em;text-align:center;font-size:.85em;line-height:1.25em}",
+    ".who b{display:block;margin-top:.15em;font-size:1.05em;word-wrap:break-word}",
+    ".note{margin:0 0 .3em;text-align:center}",
     ".file-input{position:absolute;left:-9999px;width:1px;height:1px}",
-    ".btn-transfer{height:auto;padding:.45em .6em;font-family:Tahoma,sans-serif;font-size:.68em;font-weight:bold;line-height:1.3em;letter-spacing:0;white-space:normal;background:linear-gradient(180deg,#4c6b8f 0%,#34506f 55%,#253b55 100%);color:#f1e6cf;border-color:#1c2c40;text-shadow:0 1px 1px #0b1420}",
-    ".btn-transfer:hover{background:linear-gradient(180deg,#5a7ca3 0%,#3e5e82 55%,#2c4664 100%)}",
-    ".who b{display:block;margin-top:2%;font-size:1.05em;color:#1f140a;word-wrap:break-word}",
-    /* The engine choice on the Play view: two buttons, the chosen one lit. */
-    ".engine{margin-top:4%}",
+    ".file-hint{display:block;margin-top:.3em;text-align:center;font-size:.66em;line-height:1.3em}",
+    ".file-name{display:block;margin-top:.25em;text-align:center;font-size:.74em;line-height:1.25em;word-wrap:break-word;min-height:1.25em}",
+    /* The engine choice on the Play view: two buttons, the chosen one gold with its radio ticked. */
+    ".engine{margin-top:.45em}",
+    ".engine .dbui-label{margin-top:0}",
     ".engine-row{overflow:hidden}",
-    ".engine-opt{float:left;width:48.5%;height:2.1em;margin:0;border:2px solid #7a5a2c;border-radius:.45em;background:linear-gradient(180deg,#5a5244 0%,#3b352c 100%);color:#d8ccb4;font-family:Tahoma,sans-serif;font-size:.72em;font-weight:bold;line-height:1.2em;cursor:pointer;outline:none;box-shadow:0 2px 0 rgba(0,0,0,.3)}",
+    ".engine-opt{float:left;width:48.5%;margin:0}",
     ".engine-opt+.engine-opt{margin-left:3%}",
-    ".engine-opt:hover{filter:brightness(1.08)}",
-    ".engine-opt.on{background:linear-gradient(180deg,#f6d27a 0%,#e0a743 55%,#c48a2c 100%);color:#2d1b08;border-color:#5c3b14;box-shadow:0 0 6px rgba(245,196,81,.6)}",
-    ".engine-opt[disabled]{filter:grayscale(.7);opacity:.5;cursor:default}",
-    ".engine-hint{margin-top:2%;text-align:center;font-family:Tahoma,sans-serif;font-size:.64em;line-height:1.3em;color:#4a3620}",
-    ".file-hint{display:block;margin-top:1%;text-align:center;font-family:Tahoma,sans-serif;font-size:.66em;line-height:1.3em;color:#4a3620}"
+    ".engine-opt .dbui-btn-text{font-size:.7em;line-height:2.714em;white-space:nowrap}",
+    ".engine-opt .dbui-radio{width:1.55em;height:1.55em;margin:-.25em .3em 0 0}",
+    ".engine-hint{margin-top:.3em;text-align:center;font-size:.64em;line-height:1.3em}",
+    ".transfer-btn{margin-top:.55em}",
+    /* While a request runs the buttons wait; the AIR choice greys out when AIR is not installed. */
+    ".panel .dbui-btn[disabled]{cursor:wait}",
+    ".panel .engine-opt[disabled]{cursor:default;opacity:.5}"
   ].join("\n");
 
+  /* Markup helpers for the kit's field and buttons. */
+  function field(id,type,extra){ return '<span class="dbui-field"><span class="dbui-field-rim"></span><input class="dbui-input" id="'+id+'" type="'+type+'" autocomplete="off"'+(extra||'')+'></span>'; }
+  function button(label,onclick,role,id,cls){ return '<button type="button" class="dbui-btn'+(role?' dbui-btn-'+role:'')+(cls?' '+cls:'')+'"'+(id?' id="'+id+'"':'')+' onclick="'+onclick+'"><span class="dbui-btn-art"></span><span class="dbui-btn-text">'+label+'</span></button>'; }
+  var TOOL_ITEM='db-tools-item dbui-menu-item', TOOLS_MENU='db-tools-menu dbui-menu';
   var html=[
-    '<div class="launcher-stage" id="stage">',
-    '<div class="server-pill"><span class="status-dot" id="statusDot"></span><span id="statusText">checking...</span></div>',
-    '<div class="db-tools-hitbox" id="dbToolsBtn" title="Open DB Tools"></div>',
-    '<div class="db-tools-menu" id="dbToolsMenu">',
-    '<div class="db-tools-item" onclick="onToolClick(\'Gear Library\')"><span>&#10070;</span>Gear Library</div>',
-    '<div class="db-tools-item" onclick="onToolClick(\'Stat Calculator\')"><span>&#10070;</span>Stat Calculator</div>',
-    '<div class="db-tools-item" onclick="onToolClick(\'Item Spawner\')"><span>&#10070;</span>Item Spawner</div>',
-    '<div class="db-tools-item" onclick="onToolClick(\'Mod Panel\')"><span>&#10070;</span>Mod Panel</div>',
+    '<div class="launcher-stage dbui" id="stage">',
+    '<div class="server-pill dbui-pill"><span class="dbui-dot" id="statusDot"></span><span id="statusText">checking...</span></div>',
+    '<div class="db-tools-hitbox dbui-hotspot" id="dbToolsBtn" title="Open DB Tools"><span class="dbui-hover-rim"></span></div>',
+    '<div class="'+TOOLS_MENU+'" id="dbToolsMenu">',
+    '<div class="'+TOOL_ITEM+'" onclick="onToolClick(\'Gear Library\')"><span>&#10070;</span>Gear Library</div>',
+    '<div class="'+TOOL_ITEM+'" onclick="onToolClick(\'Stat Calculator\')"><span>&#10070;</span>Stat Calculator</div>',
+    '<div class="'+TOOL_ITEM+'" onclick="onToolClick(\'Item Spawner\')"><span>&#10070;</span>Item Spawner</div>',
+    '<div class="'+TOOL_ITEM+'" onclick="onToolClick(\'Mod Panel\')"><span>&#10070;</span>Mod Panel</div>',
     '</div>',
-    '<div class="panel" id="panel">',
-    '<div class="panel-title" id="panelTitle">Sign In</div>',
-    '<div class="panel-body">',
+    '<div class="panel dbui-window" id="panel">',
+    '<span class="dbui-frame"></span>',
+    '<div class="panel-title dbui-title"><span id="panelTitle">Sign In</span></div>',
+    '<div class="panel-body" id="panelBody">',
     /* Sign in */
     '<form class="view" id="view-signin" onsubmit="return false;">',
-    '<label class="field-label" for="signinEmail">EMAIL</label><input class="field" id="signinEmail" type="text" autocomplete="off">',
-    '<label class="field-label" for="signinPassword">PASSWORD</label><input class="field" id="signinPassword" type="password" autocomplete="off">',
-    '<button type="button" class="btn btn-gold" id="signinBtn" onclick="dbSignIn()">SIGN IN</button>',
-    '<button type="button" class="btn btn-copper" onclick="dbShow(\'register\')">CREATE AN ACCOUNT</button>',
-    '<span class="link" onclick="dbForgot()">Forgot your password?</span>',
-    '<div class="msg" id="msg-signin"></div>',
+    '<label class="dbui-label first" for="signinEmail">EMAIL</label>'+field('signinEmail','text'),
+    '<label class="dbui-label" for="signinPassword">PASSWORD</label>'+field('signinPassword','password'),
+    button('SIGN IN','dbSignIn()','','signinBtn'),
+    button('CREATE AN ACCOUNT','dbShow(\'register\')','copper'),
+    '<span class="dblink dbui-link" onclick="dbForgot()">Forgot your password?</span>',
+    '<div class="msg dbui-msg" id="msg-signin"></div>',
     '</form>',
     /* Register */
     '<form class="view" id="view-register" onsubmit="return false;">',
-    '<label class="field-label" for="regEmail">EMAIL</label><input class="field" id="regEmail" type="text" autocomplete="off">',
-    '<label class="field-label" for="regPassword">PASSWORD</label><input class="field" id="regPassword" type="password" autocomplete="off">',
-    '<label class="field-label" for="regConfirm">CONFIRM PASSWORD</label><input class="field" id="regConfirm" type="password" autocomplete="off">',
-    '<button type="button" class="btn btn-gold" id="registerBtn" onclick="dbRegister()">CREATE ACCOUNT</button>',
-    '<button type="button" class="btn btn-copper" onclick="dbShow(\'signin\')">BACK TO SIGN IN</button>',
-    '<div class="msg" id="msg-register"></div>',
+    '<label class="dbui-label first" for="regEmail">EMAIL</label>'+field('regEmail','text'),
+    '<label class="dbui-label" for="regPassword">PASSWORD</label>'+field('regPassword','password'),
+    '<label class="dbui-label" for="regConfirm">CONFIRM PASSWORD</label>'+field('regConfirm','password'),
+    button('CREATE ACCOUNT','dbRegister()','','registerBtn'),
+    button('BACK TO SIGN IN','dbShow(\'signin\')','copper'),
+    '<div class="msg dbui-msg" id="msg-register"></div>',
     '</form>',
     /* Signed in */
     '<div class="view" id="view-signedin">',
     '<div class="who">Signed in as<b id="whoEmail"></b></div>',
-    '<div class="msg" id="msg-signedin" style="margin-top:0"></div>',
-    '<button type="button" class="btn btn-gold" id="playBtn" onclick="dbPlay()">PLAY</button>',
-    '<button type="button" class="btn btn-copper" onclick="dbSignOut()">SIGN OUT</button>',
+    '<div class="msg dbui-msg" id="msg-signedin" style="margin-top:0"></div>',
+    button('PLAY','dbPlay()','','playBtn'),
+    button('SIGN OUT','dbSignOut()','copper'),
     /* The engine Play starts. Both load the game from the server, so there is nothing to update. */
     '<div class="engine" id="engineBox">',
-    '<label class="field-label" style="margin-top:0">ENGINE</label>',
+    '<label class="dbui-label">ENGINE</label>',
     '<div class="engine-row">',
-    '<button type="button" class="engine-opt" id="engineAir" onclick="dbSetEngine(\'air\')">Smooth engine (AIR)</button>',
-    '<button type="button" class="engine-opt" id="engineFlash" onclick="dbSetEngine(\'flash\')">Classic Flash</button>',
+    button('<span class="dbui-radio"></span>Smooth engine (AIR)','dbSetEngine(\'air\')','slate','engineAir','dbui-btn-small engine-opt'),
+    button('<span class="dbui-radio"></span>Classic Flash','dbSetEngine(\'flash\')','slate','engineFlash','dbui-btn-small engine-opt'),
     '</div>',
-    '<div class="engine-hint" id="engineHint"></div>',
+    '<div class="engine-hint dbui-dim" id="engineHint"></div>',
     '</div>',
-    '<button type="button" class="btn btn-transfer" onclick="dbShow(\'transfer\')">Played on another Dungeon Blitz server? Upload your save file here and we move your characters to your account.</button>',
-        '</div>',
+    button('Played on another Dungeon Blitz server? Upload your save file here and we move your characters to your account.','dbShow(\'transfer\')','slate','','dbui-btn-multi transfer-btn'),
+    '</div>',
     /* Transfer: send a save file for the staff to review. Three kinds are accepted (the server
        normalizes all three): the account export, the character save and the packets capture. */
     '<div class="view" id="view-transfer">',
-    '<div class="note">Choose one of your save files and the name you want: the <b>account export</b> (<i>name</i>.accountsave.json), the <b>character save</b> (<i>name</i>save.json) or the <b>packets capture</b> (packets.json). The staff review every request.</div>',
-    '<div class="msg" id="msg-transfer" style="margin-top:0"></div>',
+    '<div class="note dbui-notice">Choose one of your save files and the name you want: the <b>account export</b> (<i>name</i>.accountsave.json), the <b>character save</b> (<i>name</i>save.json) or the <b>packets capture</b> (packets.json). The staff review every request.</div>',
+    '<div class="msg dbui-msg" id="msg-transfer" style="margin-top:0"></div>',
     '<input class="file-input" id="transferFile" type="file" accept=".json,application/json" onchange="dbTransferPicked()">',
-    '<button type="button" class="btn btn-copper" onclick="dbTransferChoose()">CHOOSE FILE</button>',
-    '<span class="file-hint">A .json file: <i>name</i>.accountsave.json, <i>name</i>save.json or packets.json (up to 2 MB)</span>',
+    button('CHOOSE FILE','dbTransferChoose()','copper'),
+    '<span class="file-hint dbui-dim">A .json file: <i>name</i>.accountsave.json, <i>name</i>save.json or packets.json (up to 2 MB)</span>',
     '<span class="file-name" id="transferName">No file chosen</span>',
-    '<label class="field-label" for="transferCharName">CHARACTER NAME</label><input class="field" id="transferCharName" type="text" maxlength="16" autocomplete="off">',
-    '<button type="button" class="btn btn-gold" id="transferBtn" onclick="dbTransferSend()">SEND REQUEST</button>',
-    '<button type="button" class="btn btn-copper" onclick="dbShow(\'signedin\')">BACK</button>',
+    '<label class="dbui-label" for="transferCharName">CHARACTER NAME</label>'+field('transferCharName','text',' maxlength="16"'),
+    button('SEND REQUEST','dbTransferSend()','','transferBtn'),
+    button('BACK','dbShow(\'signedin\')','copper'),
     '</div>',
     '</div>',
     '</div>',
+    '<div class="dbui-preload"></div>',
     '</div>'
   ].join("");
+
+  /* The kit's stylesheet first, then the launcher's own placing, so the latter wins. A refit once
+     the kit is in, as its sizes decide how much fits. */
+  var kit=document.createElement('link'); kit.rel='stylesheet'; kit.type='text/css'; kit.href=DBUI+'dbui/dbui.css';
+  kit.onload=function(){ fitPanel(); };
+  document.getElementsByTagName('head')[0].appendChild(kit);
 
   var st=document.createElement('style'); st.setAttribute('type','text/css');
   try{ st.styleSheet.cssText=css; }catch(e){ st.appendChild(document.createTextNode(css)); }
@@ -150,11 +166,13 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
   function $(id){return document.getElementById(id);}
   /* Text scales with the window, so the panel looks the same at every launcher size. */
   function fitPanel(){ var p=$('panel'), s=$('stage'); if(!p||!s) return; var size=Math.max(9,Math.round(s.offsetWidth/1280*17)); p.style.fontSize=size+'px';
-    var b=p.getElementsByTagName('div')[1]; if(!b) return; while(size>9&&b.scrollHeight>b.clientHeight+1){ size-=0.5; p.style.fontSize=size+'px'; } }
+    var b=$('panelBody'); if(!b) return; while(size>9&&b.scrollHeight>b.clientHeight+1){ size-=0.5; p.style.fontSize=size+'px'; } }
   fitPanel(); window.onresize=fitPanel;
+  /* The HTA resizes its window just above; when that lands after the first fit, fit again. */
+  window.setTimeout(fitPanel,300);
 
   var TITLES={signin:'Sign In',register:'Create Your Account',signedin:'Welcome Back',transfer:'Transfer a Character'};
-  function setMsg(t,isError){ var m=$('msg-'+view); if(m){ m.className=isError?'msg error':'msg'; m.innerHTML=t||''; } fitPanel(); }
+  function setMsg(t,isError){ var m=$('msg-'+view); if(m){ m.className=isError?'msg dbui-msg dbui-msg-error':'msg dbui-msg'; m.innerHTML=t||''; } fitPanel(); }
   window.dbShow=function(name){
     view=name;
     var names=['signin','register','signedin','transfer'];
@@ -171,7 +189,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
   function setBusy(on){ busy=on; var ids=['signinBtn','registerBtn','playBtn','transferBtn']; for(var i=0;i<ids.length;i++){ var b=$(ids[i]); if(b) b.disabled=on; } }
 
   function setServer(up){ serverUp=up; var d=$('statusDot'), s=$('statusText');
-    if(d){ d.style.background=up?'#34d399':'#b04a4a'; d.style.boxShadow='0 0 6px '+(up?'#34d399':'#b04a4a'); }
+    if(d){ d.className=up?'dbui-dot dbui-on':'dbui-dot'; }
     if(s){ s.innerHTML=up?'online':'offline'; } }
   function checkServer(){ try{ var x=newXhr(); var done=false; x.open('GET',HEALTH+'?t='+new Date().getTime(),true);
     x.onreadystatechange=function(){ if(x.readyState==4&&!done){done=true;setServer(x.status==200);} }; x.send();
@@ -212,7 +230,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
   function showEngine(){ var a=$('engineAir'), f=$('engineFlash'), h=$('engineHint'); if(!a||!f) return;
     var air=hasAir(), on=useAir();
     a.disabled=!air; a.title=air?'Up to 100 fps':'The AIR engine is not installed; run the installer again';
-    a.className=on?'engine-opt on':'engine-opt'; f.className=on?'engine-opt':'engine-opt on';
+    var opt='dbui-btn dbui-btn-small engine-opt', lit=' dbui-on', dim=' dbui-btn-slate'; a.className=opt+(on?lit:dim); f.className=opt+(on?dim:lit);
     if(h) h.innerHTML=(air?'':'AIR is not installed here, so Play uses Classic Flash. ')+'The game itself is downloaded from the server at every start, so both engines run the latest version with every patch.'; }
   window.dbSetEngine=function(which){ if(which=='air'&&!hasAir()) return; saveEngine(which=='flash'?'flash':'air'); showEngine(); fitPanel(); };
   window.dbSwitchEngine=function(){ dbSetEngine(useAir()?'flash':'air'); };
@@ -379,9 +397,9 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAYEBQUFBAYFBQUHB
 
   (function(){ var btn=$('dbToolsBtn'), menu=$('dbToolsMenu');
     if(btn&&menu){ btn.onclick=function(e){ var ev=e||window.event; if(ev.stopPropagation)ev.stopPropagation(); else ev.cancelBubble=true;
-        menu.className=(menu.className.indexOf('open')!==-1)?'db-tools-menu':'db-tools-menu open'; };
-      document.onclick=function(){ menu.className='db-tools-menu'; }; } })();
-  window.onToolClick=function(name){ var m=$('dbToolsMenu'); if(m)m.className='db-tools-menu'; setMsg(name+' - coming soon.'); };
+        menu.className=(menu.className.indexOf('open')!==-1)?TOOLS_MENU:TOOLS_MENU+' open'; };
+      document.onclick=function(){ menu.className=TOOLS_MENU; }; } })();
+  window.onToolClick=function(name){ var m=$('dbToolsMenu'); if(m)m.className=TOOLS_MENU; setMsg(name+' - coming soon.'); };
 
   (function(){ var note=document.createElement('div');
     note.style.cssText='position:absolute;left:0;right:0;bottom:4px;text-align:center;font:11px Arial,sans-serif;color:#d8d0c0;';

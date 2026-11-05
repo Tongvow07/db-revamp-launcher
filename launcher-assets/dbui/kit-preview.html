@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta charset="utf-8" />
+<title>DB UI kit</title>
+<!-- Every class of dbui.css on a plain page, as a web page would use them (no script needed). -->
+<link rel="stylesheet" href="dbui.css" />
+<style>
+body{margin:0;padding:40px 24px;background:#3a5a34;font-size:17px}
+.col{float:left;width:340px;margin:0 24px 24px 0}
+.row{overflow:hidden;margin-top:.5em}
+.half{float:left;width:48.5%}
+.half+.half{margin-left:3%}
+</style>
+</head>
+<body class="dbui">
+<div class="col">
+  <div class="dbui-window">
+    <span class="dbui-frame"></span>
+    <div class="dbui-title"><span>A Window</span></div>
+    <div class="dbui-body">
+      <label class="dbui-label" for="f1" style="margin-top:0">EMAIL</label>
+      <span class="dbui-field"><span class="dbui-field-rim"></span><input class="dbui-input" id="f1" type="text" value="player@example.com"></span>
+      <button type="button" class="dbui-btn"><span class="dbui-btn-art"></span><span class="dbui-btn-text">GOLD</span></button>
+      <button type="button" class="dbui-btn dbui-btn-slate"><span class="dbui-btn-art"></span><span class="dbui-btn-text">SLATE</span></button>
+      <button type="button" class="dbui-btn dbui-btn-copper"><span class="dbui-btn-art"></span><span class="dbui-btn-text">COPPER</span></button>
+      <button type="button" class="dbui-btn" disabled><span class="dbui-btn-art"></span><span class="dbui-btn-text">DISABLED</span></button>
+      <div class="row">
+        <button type="button" class="dbui-btn dbui-btn-small dbui-on half"><span class="dbui-btn-art"></span><span class="dbui-btn-text"><span class="dbui-radio"></span> Chosen</span></button>
+        <button type="button" class="dbui-btn dbui-btn-small dbui-btn-slate half"><span class="dbui-btn-art"></span><span class="dbui-btn-text"><span class="dbui-radio"></span> Other</span></button>
+      </div>
+      <button type="button" class="dbui-btn dbui-btn-multi dbui-btn-slate"><span class="dbui-btn-art"></span><span class="dbui-btn-text">A longer button whose words wrap onto a second line, and it grows with them.</span></button>
+      <p style="margin:.6em 0 0;text-align:center"><span class="dbui-link">A link</span></p>
+    </div>
+  </div>
+</div>
+<div class="col">
+  <p class="dbui-pill"><span class="dbui-dot dbui-on"></span>online</p>
+  <p class="dbui-pill"><span class="dbui-dot"></span>offline</p>
+  <p><label><span class="dbui-check dbui-on"></span> A ticked check box</label></p>
+  <p><label><span class="dbui-check"></span> A check box</label></p>
+  <p><label class="dbui-on"><span class="dbui-radio"></span> A chosen radio</label></p>
+  <p><label><span class="dbui-radio"></span> A radio</label></p>
+  <div class="dbui-menu" style="width:220px;font-size:14px">
+    <div class="dbui-menu-item">A menu row</div>
+    <div class="dbui-menu-item">Another row</div>
+  </div>
+  <p class="dbui-text">.dbui-text: cream <b>and gold</b></p>
+  <p class="dbui-dim">.dbui-dim: a hint</p>
+  <p class="dbui-notice">.dbui-notice: a small note for longer explanations.</p>
+  <p class="dbui-msg">.dbui-msg: Saved.</p>
+  <p class="dbui-msg dbui-msg-error">.dbui-msg-error: That did not work.</p>
+  <div class="dbui-hotspot" style="position:relative;width:180px;height:50px;background:#222;text-align:center;line-height:50px">.dbui-hotspot<span class="dbui-hover-rim"></span></div>
+</div>
+<div class="dbui-preload"></div>
+</body>
+</html>

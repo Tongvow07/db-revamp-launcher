@@ -1,0 +1,732 @@
+{
+  "note": "Written by node dbui\\build.js from the game client's UI files; check with --verify. Slices are in the PNG's pixels (the art at `scale` times its own size).",
+  "sources": {
+    "cbp/UI_0.swf": "229a2a486cbd059f59951e80956b1ef49b3680b2e4cb8b03543d54eb53b90713",
+    "cbp/UI_1.swf": "793c7e0b9dd900db3c634e7b8f5ab8db7d21f9c2cef27c27b0e2cee250bdcb7a",
+    "caa/UI_3.swf": "32c003eddc227ac6d72f29ab29e137f3b77bf1d12958db89af4eb60b9bf7090d",
+    "cbp/UI_4.swf": "11a1e8eecafcfe44aba15f74face42f77d8864d2aa61d6a9fd7b62b6de5cbb01",
+    "caa/UI_Library.swf": "a5d620a9bb8cda84447a29eb3eae21e671d7b22c453e6f5d4ad3f85099eadc03"
+  },
+  "pieces": [
+    {
+      "file": "dbui/window.png",
+      "what": "the game's sign-in window: its stone frame, gold rim and dark well, without its fields, labels, check box and buttons",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoginSplash",
+        "id": 145,
+        "frame": 1,
+        "parts": {
+          "kept": 18,
+          "left_out": 26
+        }
+      },
+      "scale": 2,
+      "width": 908,
+      "height": 504,
+      "slice": [
+        88,
+        88,
+        88,
+        88
+      ],
+      "sha256": "0dc5eca68abfdb908fe5ee5239deb533d0597661f1afd828da360d184b39d484"
+    },
+    {
+      "file": "dbui/field.png",
+      "what": "the sign-in window's Email field rim (the gold rim parts round am_Email), transparent inside",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoginSplash",
+        "id": 145,
+        "frame": 1,
+        "parts": {
+          "kept": 8,
+          "left_out": 36
+        }
+      },
+      "scale": 2,
+      "width": 747,
+      "height": 105,
+      "slice": [
+        40,
+        40,
+        40,
+        40
+      ],
+      "sha256": "040cb44e0d3833988c172f8a3f87effe566aec0e833accac5c5e35aa2dd9f3dc"
+    },
+    {
+      "file": "dbui/button.png",
+      "what": "the sign-in window's Login button (am_LoginButton), Ready frame, without its label (the gold role: the button as the game has it)",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoginSplash",
+        "id": 145,
+        "frame": 1,
+        "path": [
+          "am_LoginButton"
+        ],
+        "childId": 144,
+        "parts": {
+          "kept": 2,
+          "left_out": 1
+        }
+      },
+      "scale": 2,
+      "width": 180,
+      "height": 76,
+      "slice": [
+        32,
+        36,
+        32,
+        36
+      ],
+      "sha256": "b3fcbdfc3d00925e121fe9bfa72586facedef763a3e4378cfb79a36cde0e5c67"
+    },
+    {
+      "file": "dbui/button-over.png",
+      "what": "the sign-in window's Login button (am_LoginButton), Over frame, without its label (the gold role: the button as the game has it)",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoginSplash",
+        "id": 145,
+        "frame": 2,
+        "path": [
+          "am_LoginButton"
+        ],
+        "childId": 144,
+        "parts": {
+          "kept": 2,
+          "left_out": 1
+        }
+      },
+      "scale": 2,
+      "width": 180,
+      "height": 76,
+      "slice": [
+        32,
+        36,
+        32,
+        36
+      ],
+      "sha256": "33a71c9e43c2e78999429876f398564cefcf2bd43e6d8e05004396d0fb5826fe"
+    },
+    {
+      "file": "dbui/button-click.png",
+      "what": "the sign-in window's Login button (am_LoginButton), Click frame, without its label (the gold role: the button as the game has it)",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoginSplash",
+        "id": 145,
+        "frame": 3,
+        "path": [
+          "am_LoginButton"
+        ],
+        "childId": 144,
+        "parts": {
+          "kept": 2,
+          "left_out": 1
+        }
+      },
+      "scale": 2,
+      "width": 180,
+      "height": 76,
+      "slice": [
+        32,
+        36,
+        32,
+        36
+      ],
+      "sha256": "b539ad3ad1407f4271b768f949aae7d50c6b8fb5cc52b15be041d13ae7e355f4"
+    },
+    {
+      "file": "dbui/button-copper.png",
+      "what": "the sign-in window's Login button (am_LoginButton), Ready frame, without its label, recoloured copper",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoginSplash",
+        "id": 145,
+        "frame": 1,
+        "path": [
+          "am_LoginButton"
+        ],
+        "childId": 144,
+        "parts": {
+          "kept": 2,
+          "left_out": 1
+        },
+        "tint": {
+          "r": 1,
+          "g": 0.66,
+          "b": 0.42,
+          "ro": 14,
+          "go": 0,
+          "bo": 0
+        }
+      },
+      "scale": 2,
+      "width": 180,
+      "height": 76,
+      "slice": [
+        32,
+        36,
+        32,
+        36
+      ],
+      "sha256": "85afb05803417a2c741b2ba22fcd6c02190ddc4009c3623a845d56c50d37ccfc"
+    },
+    {
+      "file": "dbui/button-copper-over.png",
+      "what": "the sign-in window's Login button (am_LoginButton), Over frame, without its label, recoloured copper",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoginSplash",
+        "id": 145,
+        "frame": 2,
+        "path": [
+          "am_LoginButton"
+        ],
+        "childId": 144,
+        "parts": {
+          "kept": 2,
+          "left_out": 1
+        },
+        "tint": {
+          "r": 1,
+          "g": 0.66,
+          "b": 0.42,
+          "ro": 14,
+          "go": 0,
+          "bo": 0
+        }
+      },
+      "scale": 2,
+      "width": 180,
+      "height": 76,
+      "slice": [
+        32,
+        36,
+        32,
+        36
+      ],
+      "sha256": "8f2362fcdaf1da0eb8b5b56bd3d104d7574539c960120362c5b43e9504663cb8"
+    },
+    {
+      "file": "dbui/button-copper-click.png",
+      "what": "the sign-in window's Login button (am_LoginButton), Click frame, without its label, recoloured copper",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoginSplash",
+        "id": 145,
+        "frame": 3,
+        "path": [
+          "am_LoginButton"
+        ],
+        "childId": 144,
+        "parts": {
+          "kept": 2,
+          "left_out": 1
+        },
+        "tint": {
+          "r": 1,
+          "g": 0.66,
+          "b": 0.42,
+          "ro": 14,
+          "go": 0,
+          "bo": 0
+        }
+      },
+      "scale": 2,
+      "width": 180,
+      "height": 76,
+      "slice": [
+        32,
+        36,
+        32,
+        36
+      ],
+      "sha256": "b88cec0224f55f3447b0508b69e0b34a3c7ed4d343a849e1027a3b2f6725108e"
+    },
+    {
+      "file": "dbui/button-slate.png",
+      "what": "the sign-in window's Login button (am_LoginButton), Ready frame, without its label, its colour taken out (slate)",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoginSplash",
+        "id": 145,
+        "frame": 1,
+        "path": [
+          "am_LoginButton"
+        ],
+        "childId": 144,
+        "parts": {
+          "kept": 2,
+          "left_out": 1
+        },
+        "tint": {
+          "matrix": [
+            0.3086,
+            0.6094,
+            0.082,
+            0,
+            0,
+            0.3086,
+            0.6094,
+            0.082,
+            0,
+            0,
+            0.3086,
+            0.6094,
+            0.082,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "scale": 2,
+      "width": 180,
+      "height": 76,
+      "slice": [
+        32,
+        36,
+        32,
+        36
+      ],
+      "sha256": "12a0c17e40e26741928584753bacb2593adda33a404d5222beeda6c405395a03"
+    },
+    {
+      "file": "dbui/button-slate-over.png",
+      "what": "the sign-in window's Login button (am_LoginButton), Over frame, without its label, its colour taken out (slate)",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoginSplash",
+        "id": 145,
+        "frame": 2,
+        "path": [
+          "am_LoginButton"
+        ],
+        "childId": 144,
+        "parts": {
+          "kept": 2,
+          "left_out": 1
+        },
+        "tint": {
+          "matrix": [
+            0.3086,
+            0.6094,
+            0.082,
+            0,
+            0,
+            0.3086,
+            0.6094,
+            0.082,
+            0,
+            0,
+            0.3086,
+            0.6094,
+            0.082,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "scale": 2,
+      "width": 180,
+      "height": 76,
+      "slice": [
+        32,
+        36,
+        32,
+        36
+      ],
+      "sha256": "8328a9c7f9710e068eb4c73b72b49d746e44fee8def5ea39a07ac0b4a66e8275"
+    },
+    {
+      "file": "dbui/button-slate-click.png",
+      "what": "the sign-in window's Login button (am_LoginButton), Click frame, without its label, its colour taken out (slate)",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoginSplash",
+        "id": 145,
+        "frame": 3,
+        "path": [
+          "am_LoginButton"
+        ],
+        "childId": 144,
+        "parts": {
+          "kept": 2,
+          "left_out": 1
+        },
+        "tint": {
+          "matrix": [
+            0.3086,
+            0.6094,
+            0.082,
+            0,
+            0,
+            0.3086,
+            0.6094,
+            0.082,
+            0,
+            0,
+            0.3086,
+            0.6094,
+            0.082,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "scale": 2,
+      "width": 180,
+      "height": 76,
+      "slice": [
+        32,
+        36,
+        32,
+        36
+      ],
+      "sha256": "b35bd14438d8a89725b71c836b2170fac56628ca9aa5a83ec1192849ba86f1f1"
+    },
+    {
+      "file": "dbui/header.png",
+      "what": "the battlement the game crowns its talent window with (Kael's arena keep wears it too)",
+      "source": {
+        "swf": "caa/UI_Library.swf",
+        "symbol": "_WindowSkinHeaderTalents",
+        "id": 60,
+        "frame": 1
+      },
+      "scale": 2,
+      "width": 1579,
+      "height": 289,
+      "slice": [
+        0,
+        260,
+        0,
+        260
+      ],
+      "sha256": "3428bae44bbfe1bc20e3e91abbf17d19328161c53ff30bca150c2b7af39d006c"
+    },
+    {
+      "file": "dbui/radio.png",
+      "what": "the sign-in window's Remember Password check (am_SavePass), Ready frame, without its tick",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoginSplash",
+        "id": 145,
+        "frame": 1,
+        "path": [
+          "am_SavePass"
+        ],
+        "childId": 81,
+        "parts": {
+          "kept": 1,
+          "left_out": 1
+        }
+      },
+      "scale": 1,
+      "width": 58,
+      "height": 58,
+      "slice": null,
+      "sha256": "80f64935e5755bd749b85e8ea30a73d85411f5f188d19524c93057abf03f88da"
+    },
+    {
+      "file": "dbui/radio-over.png",
+      "what": "the Remember Password check, Over frame, without its tick",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoginSplash",
+        "id": 145,
+        "frame": 2,
+        "path": [
+          "am_SavePass"
+        ],
+        "childId": 81,
+        "parts": {
+          "kept": 1,
+          "left_out": 1
+        }
+      },
+      "scale": 1,
+      "width": 58,
+      "height": 58,
+      "slice": null,
+      "sha256": "ab6a02b45c964421ac3e0368cb66611ab22b24fb5e767fd38b05ea9291910f6a"
+    },
+    {
+      "file": "dbui/radio-on.png",
+      "what": "the Remember Password check, Ready frame, ticked",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoginSplash",
+        "id": 145,
+        "frame": 1,
+        "path": [
+          "am_SavePass"
+        ],
+        "childId": 81,
+        "parts": {
+          "kept": 2,
+          "left_out": 0
+        }
+      },
+      "scale": 1,
+      "width": 58,
+      "height": 58,
+      "slice": null,
+      "sha256": "947b104734be0fa493a62258e37ecf72bb524ad31fb6e9713ad56db636fa46ad"
+    },
+    {
+      "file": "dbui/radio-on-over.png",
+      "what": "the Remember Password check, Over frame, ticked",
+      "source": {
+        "swf": "cbp/UI_0.swf",
+        "symbol": "a_LoginSplash",
+        "id": 145,
+        "frame": 2,
+        "path": [
+          "am_SavePass"
+        ],
+        "childId": 81,
+        "parts": {
+          "kept": 2,
+          "left_out": 0
+        }
+      },
+      "scale": 1,
+      "width": 58,
+      "height": 58,
+      "slice": null,
+      "sha256": "27ffed94978f468d6eadcc95d21547ed1efbf6dca435c1e7351b517e6ffaf177"
+    },
+    {
+      "file": "dbui/check.png",
+      "what": "the Options window's Profanity Filter check box (am_ProfaneFilter), without its tick",
+      "source": {
+        "swf": "cbp/UI_4.swf",
+        "symbol": "a_Menu",
+        "id": 1194,
+        "frame": 1,
+        "path": [
+          "am_MenuWrapper",
+          "am_ProfaneFilter"
+        ],
+        "childId": 1169,
+        "parts": {
+          "kept": 3,
+          "left_out": 1
+        }
+      },
+      "scale": 2,
+      "width": 80,
+      "height": 76,
+      "slice": null,
+      "sha256": "0c26df3b8f7a4b70b44ff060bfc60592a759b509e2849163329bf82ccdaa7633"
+    },
+    {
+      "file": "dbui/check-on.png",
+      "what": "the Options window's Profanity Filter check box, ticked",
+      "source": {
+        "swf": "cbp/UI_4.swf",
+        "symbol": "a_Menu",
+        "id": 1194,
+        "frame": 1,
+        "path": [
+          "am_MenuWrapper",
+          "am_ProfaneFilter"
+        ],
+        "childId": 1169,
+        "parts": {
+          "kept": 4,
+          "left_out": 0
+        }
+      },
+      "scale": 2,
+      "width": 80,
+      "height": 76,
+      "slice": null,
+      "sha256": "1dace8835df584db63e4f12454223609baed28e5b447fddb7a8e548320f2a595"
+    },
+    {
+      "file": "dbui/pill.png",
+      "what": "the dark stat plate the game puts numbers on (GameUi.Matte)",
+      "source": {
+        "swf": "caa/UI_Library.swf",
+        "symbol": "_DoodadStatMatte01",
+        "id": 956,
+        "frame": 1
+      },
+      "scale": 2,
+      "width": 171,
+      "height": 53,
+      "slice": [
+        0,
+        20,
+        0,
+        20
+      ],
+      "sha256": "4c6a52fa83d30c1b13391768712a3ffcc6f6400cd537edaa47ee7a4a42d2807d"
+    },
+    {
+      "file": "dbui/dot.png",
+      "what": "the game's dot (UI_1 a_Dot), red: offline",
+      "source": {
+        "swf": "cbp/UI_1.swf",
+        "symbol": "a_Dot",
+        "id": 2643,
+        "frame": 1
+      },
+      "scale": 4,
+      "width": 40,
+      "height": 40,
+      "slice": null,
+      "sha256": "2aaac6a0f9ce7fa9a1630fe210ebca7626b4d71238e5eaef88bfc3f45122a167"
+    },
+    {
+      "file": "dbui/dot-on.png",
+      "what": "the game's dot with its red and green swapped: online",
+      "source": {
+        "swf": "cbp/UI_1.swf",
+        "symbol": "a_Dot",
+        "id": 2643,
+        "frame": 1,
+        "tint": {
+          "matrix": [
+            0,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0
+          ]
+        }
+      },
+      "scale": 4,
+      "width": 40,
+      "height": 40,
+      "slice": null,
+      "sha256": "2c431ea8d8e425a5feb0792dc960176f36cbf52bde3a574ebbf65bfa96dfac3b"
+    },
+    {
+      "file": "dbui/menu-item.png",
+      "what": "a row of the game's friend menu (a_FriendPopupOption), without its texts",
+      "source": {
+        "swf": "cbp/UI_1.swf",
+        "symbol": "a_FriendPopupOption",
+        "id": 62,
+        "frame": 1,
+        "parts": {
+          "kept": 1,
+          "left_out": 2
+        }
+      },
+      "scale": 2,
+      "width": 280,
+      "height": 40,
+      "slice": [
+        6,
+        6,
+        6,
+        6
+      ],
+      "sha256": "3afe098bf42e97308efbec8b9cf6e4a3e20e8a5ac1e6f1d263666ca1c64a5ef2"
+    },
+    {
+      "file": "dbui/menu-item-over.png",
+      "what": "a row of the game's friend menu, its hover frame, without its texts",
+      "source": {
+        "swf": "cbp/UI_1.swf",
+        "symbol": "a_FriendPopupOption",
+        "id": 62,
+        "frame": 2,
+        "parts": {
+          "kept": 1,
+          "left_out": 2
+        }
+      },
+      "scale": 2,
+      "width": 280,
+      "height": 40,
+      "slice": [
+        6,
+        6,
+        6,
+        6
+      ],
+      "sha256": "b36ed901dc02f5e6a0aa0a34d28fc89a4dfbb83219002ab8f269e6c74d7d849a"
+    },
+    {
+      "file": "dbui/hover-rim.png",
+      "what": "the cream rim the game lights round a button under the pointer (_ButtonFrameOver01)",
+      "source": {
+        "swf": "caa/UI_Library.swf",
+        "symbol": "_ButtonFrameOver01",
+        "id": 1418,
+        "frame": 1
+      },
+      "scale": 2,
+      "width": 348,
+      "height": 76,
+      "slice": [
+        28,
+        28,
+        28,
+        28
+      ],
+      "sha256": "bf5752deec9adc4adf6c985ac8e7056bb903beddaecba06343c13342f378d7f7"
+    }
+  ],
+  "fonts": [
+    {
+      "file": "dbui/db-game-ui.woff",
+      "what": "the game's UI font, HelveticaRounded LT Std Bd (the font every game window uses)",
+      "source": {
+        "swf": "caa/UI_3.swf",
+        "symbol": "a_Font_GameUI",
+        "id": 1
+      },
+      "sha256": "66f65f530e4456284eed86f77a5a14af5e3366047df4577548eda4fe3e963f09"
+    },
+    {
+      "file": "dbui/db-game-ui.ttf",
+      "what": "the game's UI font, HelveticaRounded LT Std Bd (the font every game window uses)",
+      "source": {
+        "swf": "caa/UI_3.swf",
+        "symbol": "a_Font_GameUI",
+        "id": 1
+      },
+      "sha256": "ee2b7130b1c4135e5f9407ace407149fd294a91a281de74e840c783adad94085"
+    }
+  ]
+}

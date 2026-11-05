@@ -5,4 +5,4 @@ DB REVAMPED - How to play
    - Windows may warn 'unknown publisher' -> More info -> Run anyway (it's just unsigned).
 3. Create an account (email + password), then click Launch Game and sign in.
 
-Windows only. Server: dungeonblitzv.duckdns.org
+Windows only. Server: dbrevamped.com

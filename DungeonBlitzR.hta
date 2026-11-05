@@ -16,7 +16,7 @@
    script. It used to be downloaded from the server and eval'd at every start, which Windows
    Defender's behaviour monitoring took for a trojan loader (Behavior:Win32/Execution.A!ml,
    Trojan:Win32/Bearfoos.B!ml, 2026-10-27): the launcher now runs only code that was installed. */
-var HOST="https://dungeonblitzv.duckdns.org";
+var HOST="https://dbrevamped.com";
 function newXhr(){ try{return new ActiveXObject("MSXML2.ServerXMLHTTP.6.0");}catch(e){try{return new ActiveXObject("MSXML2.ServerXMLHTTP");}catch(e2){return new ActiveXObject("Microsoft.XMLHTTP");}} }
 function hereDir(){ var p=decodeURIComponent(window.location.pathname).replace(/^\/+/,'').replace(/\//g,'\\'); var i=p.lastIndexOf('\\'); return i>0?p.substring(0,i):'.'; }
 var PROJ=hereDir()+"\\flashplayer.exe";

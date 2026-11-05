@@ -1,0 +1,127 @@
+/* DB UI kit: the game's own window, field, button, check box, menu and pill art ("DB coded UI").
+   The PNGs and the font beside this file are exported from the game client's UI files by
+   node dbui\build.js (the launcher repo), which also checks this file with --verify. Every piece
+   is the game's own art, never drawn; the copper and slate buttons and the green dot are
+   recoloured. Nine-slice pieces stretch with border-image (IE11 and every current browser).
+   Sizes are in em: set font-size on a container and the whole kit scales with it.
+
+   Use: <link rel="stylesheet" href="dbui/dbui.css"> and put class "dbui" on a container (the
+   game's font, its cream text and black outline; everything below assumes it).
+
+   .dbui-window      a window: the game's sign-in window (stone frame, gold rim, dark well) with the
+                     talent window's battlement on top as its title plate. Markup:
+                       <div class="dbui dbui-window">
+                         <span class="dbui-frame"></span>
+                         <div class="dbui-title"><span>Title</span></div>
+                         <div class="dbui-body">...content...</div>
+                       </div>
+                     The battlement stands 1.75em above the window's box (the window keeps a
+                     1.75em top margin for it); .dbui-title can be left out.
+   .dbui-label       a field label: cyan, as the game's sign-in window labels its fields
+   .dbui-field       a text field: <span class="dbui-field"><span class="dbui-field-rim"></span>
+                       <input class="dbui-input"></span> (the window's own gold field rim)
+   .dbui-btn         a button: <button class="dbui-btn"><span class="dbui-btn-art"></span>
+                       <span class="dbui-btn-text">LABEL</span></button>; the game's Login button
+                     with its own Over and Click frames. Roles: gold (the default: the button as
+                     the game has it), .dbui-btn-slate, .dbui-btn-copper. Sizes: .dbui-btn-small,
+                     .dbui-btn-multi (wrapping text, grows with it). [disabled] shows the Click frame.
+   .dbui-link        a text link: cyan, lighter under the pointer (the sign-in window's
+                     "Forgot your password?")
+   .dbui-check       a square check box (the Options window's); .dbui-radio a round one (the sign-in
+                     window's Remember Password), for a choice of one. Add .dbui-on to the box or to
+                     a parent (a .dbui-btn, a label) to tick it; inside a button or label it lights
+                     with the pointer.
+   .dbui-pill        a small dark plate for a status line (the game's stat plate), one line high;
+                     .dbui-dot in it is a light: red, or green with .dbui-on
+   .dbui-menu        a drop-down menu (a small stone window) of .dbui-menu-item rows (the rows of
+                     the game's right-click menu on a friend, lighter under the pointer)
+   .dbui-hotspot     a clickable area over a picture; a .dbui-hover-rim inside it shows the cream rim
+                     the game lights round a button under the pointer
+   Text:             .dbui-text (cream), .dbui-dim (muted, for hints and notices), .dbui-notice
+                     (small cream note), .dbui-gold (emphasis; b and strong are gold too),
+                     .dbui-cyan, .dbui-msg (green: a status message), .dbui-msg-error (red)
+   .dbui-preload     put one anywhere: it loads the Over, Click and ticked pictures up front
+*/
+
+@font-face{font-family:'DB Game UI';src:url('db-game-ui.woff') format('woff'),url('db-game-ui.ttf') format('truetype');font-weight:normal;font-style:normal}
+
+.dbui{font-family:'DB Game UI',Arial,sans-serif;font-weight:normal;color:#eee2bc;text-shadow:-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000,1px 1px 0 #000,0 0 3px #000}
+.dbui,.dbui *{box-sizing:border-box}
+.dbui b,.dbui strong{font-weight:normal;color:#fdf399}
+
+/* Window: frame 88 PNG px shown at 2.07em; battlement towers 260 PNG px at 2.95em. */
+.dbui-window{position:relative;display:block;margin-top:1.75em;padding:2.3em 1.5em 1.35em;min-width:8em}
+.dbui-frame{position:absolute;left:0;right:0;top:.55em;bottom:0;border-style:solid;border-width:2.07em;border-image:url('window.png') 88 88 88 88 fill stretch}
+.dbui-title{position:absolute;left:0;right:0;top:-1.75em;height:3.3em;padding-top:1.3em;display:-ms-flexbox;display:flex;-ms-flex-align:center;align-items:center;-ms-flex-pack:center;justify-content:center;overflow:visible;border-style:solid;border-width:0 2.95em;border-image:url('header.png') 0 260 0 260 fill stretch;color:#eee2bc;white-space:nowrap}
+.dbui-title span{font-size:1.4em;line-height:1}
+.dbui-body{position:relative}
+
+/* Labels and fields */
+.dbui-label{display:block;margin:.45em 0 .12em .45em;color:#0099cc;font-size:.85em;line-height:1.15em}
+.dbui-field{position:relative;display:block;height:2.15em}
+.dbui-field-rim{position:absolute;left:0;top:0;right:0;bottom:0;border-style:solid;border-width:.94em;border-image:url('field.png') 40 40 40 40 stretch}
+.dbui-input{position:absolute;left:0;top:0;width:100%;height:100%;margin:0;padding:0 1em;border:0;background:transparent;color:#eee2bc;font-family:'DB Game UI',Arial,sans-serif;font-weight:normal;font-size:.9em;outline:none;text-shadow:inherit;-ms-user-select:text}
+.dbui-input::-ms-clear{display:none}
+
+/* Buttons: 32 / 36 PNG px corners shown at .9em / 1.02em. */
+.dbui-btn{position:relative;display:block;width:100%;height:2.2em;margin:.5em 0 0;padding:0;border:0;background:transparent;cursor:pointer;outline:none;overflow:visible;font-family:'DB Game UI',Arial,sans-serif;font-weight:normal;font-size:1em;color:#eee2bc;text-shadow:inherit}
+.dbui-btn-art{position:absolute;left:0;top:0;right:0;bottom:0;border-style:solid;border-width:.9em 1.02em;border-image:url('button.png') 32 36 32 36 fill stretch}
+.dbui-btn-text{position:relative;display:block;font-size:1.05em;line-height:2.1em;letter-spacing:.02em;text-align:center;white-space:nowrap}
+.dbui-btn:hover .dbui-btn-art{border-image:url('button-over.png') 32 36 32 36 fill stretch}
+.dbui-btn:hover .dbui-btn-text{color:#e8e2cf}
+.dbui-btn:active .dbui-btn-art{border-image:url('button-click.png') 32 36 32 36 fill stretch}
+.dbui-btn:active .dbui-btn-text{color:#b1b1b1;top:.1em;left:.1em}
+.dbui-btn-copper .dbui-btn-art{border-image:url('button-copper.png') 32 36 32 36 fill stretch}
+.dbui-btn-copper:hover .dbui-btn-art{border-image:url('button-copper-over.png') 32 36 32 36 fill stretch}
+.dbui-btn-copper:active .dbui-btn-art{border-image:url('button-copper-click.png') 32 36 32 36 fill stretch}
+.dbui-btn-slate .dbui-btn-art{border-image:url('button-slate.png') 32 36 32 36 fill stretch}
+.dbui-btn-slate:hover .dbui-btn-art{border-image:url('button-slate-over.png') 32 36 32 36 fill stretch}
+.dbui-btn-slate:active .dbui-btn-art{border-image:url('button-slate-click.png') 32 36 32 36 fill stretch}
+.dbui-btn[disabled]{cursor:default}
+.dbui-btn[disabled] .dbui-btn-art{border-image:url('button-click.png') 32 36 32 36 fill stretch}
+.dbui-btn[disabled] .dbui-btn-text{color:#b1b1b1;top:0;left:0}
+.dbui-btn-small{height:1.9em}
+.dbui-btn-small .dbui-btn-text{font-size:.8em;line-height:2.375em}
+.dbui-btn-multi{height:auto}
+.dbui-btn-multi .dbui-btn-text{padding:.75em 1.4em;font-size:.7em;line-height:1.3em;letter-spacing:0;white-space:normal}
+
+/* Link */
+.dbui-link{color:#0099cc;cursor:pointer}
+.dbui-link:hover{color:#00ccff}
+
+/* Check box and radio: shown whole. */
+.dbui-check,.dbui-radio{display:inline-block;width:1.2em;height:1.2em;vertical-align:middle;background-repeat:no-repeat;background-position:center;background-size:100% 100%}
+.dbui-check{width:1.26em;background-image:url('check.png')}
+.dbui-check.dbui-on,.dbui-on .dbui-check{background-image:url('check-on.png')}
+.dbui-radio{background-image:url('radio.png')}
+.dbui-radio:hover,.dbui-btn:hover .dbui-radio,label:hover .dbui-radio{background-image:url('radio-over.png')}
+.dbui-radio.dbui-on,.dbui-on .dbui-radio{background-image:url('radio-on.png')}
+.dbui-radio.dbui-on:hover,.dbui-on:hover .dbui-radio{background-image:url('radio-on-over.png')}
+.dbui-btn[disabled] .dbui-radio{background-image:url('radio.png')}
+
+/* Pill and light: the plate's 20 PNG px round ends shown at .72em. */
+.dbui-pill{display:inline-block;height:1.9em;line-height:1.9em;padding:0 .25em;border-style:solid;border-width:0 .72em;border-image:url('pill.png') 0 20 0 20 fill stretch;white-space:nowrap}
+.dbui-dot{display:inline-block;width:.8em;height:.8em;margin-right:.4em;vertical-align:-.08em;background:url('dot.png') no-repeat center;background-size:100% 100%}
+.dbui-dot.dbui-on{background-image:url('dot-on.png')}
+
+/* Menu: a small stone window of rows. */
+.dbui-menu{border-style:solid;border-width:.8em;border-image:url('window.png') 88 88 88 88 fill stretch}
+.dbui-menu-item{display:block;height:2.1em;padding:0 .8em;line-height:2.1em;border-style:solid;border-width:1px;border-image:url('menu-item.png') 6 6 6 6 fill stretch;color:#eee2bc;cursor:pointer;text-align:left;white-space:nowrap}
+.dbui-menu-item:hover{border-image:url('menu-item-over.png') 6 6 6 6 fill stretch;color:#ffffff}
+
+/* Hotspot over a picture */
+.dbui-hotspot{cursor:pointer}
+.dbui-hover-rim{display:none;position:absolute;left:0;top:0;right:0;bottom:0;border-style:solid;border-width:.6em;border-image:url('hover-rim.png') 28 28 28 28 stretch}
+.dbui-hotspot:hover .dbui-hover-rim{display:block}
+
+/* Text */
+.dbui-text{color:#eee2bc}
+.dbui-dim{color:#b8ae8c}
+.dbui-notice{color:#eee2bc;font-size:.74em;line-height:1.35em}
+.dbui-gold{color:#fdf399}
+.dbui-cyan{color:#0099cc}
+.dbui-msg{color:#7cff7c}
+.dbui-msg-error{color:#ff5a4a}
+
+/* Loaded up front so a hover or a tick never shows an empty picture. */
+.dbui-preload{position:absolute;left:-200px;top:-200px;width:1px;height:1px;overflow:hidden;background-image:url('button-over.png'),url('button-click.png'),url('button-copper-over.png'),url('button-copper-click.png'),url('button-slate-over.png'),url('button-slate-click.png'),url('radio-over.png'),url('radio-on.png'),url('radio-on-over.png'),url('check-on.png'),url('dot-on.png'),url('menu-item-over.png'),url('hover-rim.png')}

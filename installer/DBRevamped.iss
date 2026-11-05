@@ -34,9 +34,9 @@
 #define AppName "DB Revamped"
 #define AppVersion "1.3.0"
 #define AppPublisher "DB Revamped"
-#define AppUrl "https://dungeonblitzv.duckdns.org"
+#define AppUrl "https://dbrevamped.com"
 ; Plain http: the game reads its http files, which an https page may not.
-#define GameUrl "http://dungeonblitzv.duckdns.org/p/cbp/DungeonBlitz.swf"
+#define GameUrl "http://dbrevamped.com/p/cbp/DungeonBlitz.swf"
 
 [Setup]
 AppId={{42173429-E4AE-4E5A-B637-FEB103416E65}
@@ -72,6 +72,10 @@ Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription
 ; The launcher: the HTA shell and its screen, loaded from here as a plain script.
 Source: "..\DungeonBlitzR.hta"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\launcher-assets\ui.js"; DestDir: "{app}\launcher-assets"; Flags: ignoreversion
+; The DB UI kit the screen is made of: the game's own art, its UI font and dbui.css (node dbui\build.js).
+Source: "..\launcher-assets\dbui\*.png"; DestDir: "{app}\launcher-assets\dbui"; Flags: ignoreversion
+Source: "..\launcher-assets\dbui\db-game-ui.*"; DestDir: "{app}\launcher-assets\dbui"; Flags: ignoreversion
+Source: "..\launcher-assets\dbui\dbui.css"; DestDir: "{app}\launcher-assets\dbui"; Flags: ignoreversion
 ; The game in Adobe AIR's runtime (node air\build.js), up to 100 fps. The launcher's default engine.
 Source: "..\air\bundle\*"; DestDir: "{app}\air"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; Adobe's Flash Player 32 projector, as Adobe signed it (do not patch it: that breaks the signature).

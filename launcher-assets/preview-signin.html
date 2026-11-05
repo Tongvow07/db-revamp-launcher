@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta charset="utf-8" />
+<title>DB Revamped - launcher preview</title>
+<!-- A preview of the launcher for a normal browser: the launcher's own ui.js over its own background,
+     with no real ActiveX and no server. Nothing is sent or written anywhere: newXhr below answers
+     every request itself (the status check says online, a sign-in says the server cannot be
+     reached), and the stand-in ActiveXObject only pretends (no file is read or written).
+     Open it as it is (Sign In), or add:
+       ?view=register | ?view=signedin | ?view=transfer   that screen (the last two signed in as
+                                                          player@example.com, with AIR installed)
+       &noair=1          as if the AIR engine were not installed
+       &flash=1          as if Classic Flash were the chosen engine
+       &msg=error | &msg=info   a message on the screen
+       &fill=1           a made-up email and password typed in, to show the fields' text
+       &menu=open        the DB TOOLS menu open
+       &offline=1        the server status says offline -->
+<style>html,body{height:100%;margin:0;background:#070707;overflow:hidden;font-family:Georgia,serif;color:#f8f2ea}
+#boot{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);text-align:center;font-size:13px;color:#a99a86}</style>
+</head>
+<body>
+<div id="root"><div id="boot">Loading DB Revamped...</div></div>
+<script type="text/javascript">
+/* What the HTA shell gives ui.js, with stand-ins for its ActiveX parts. */
+var HOST="https://dbrevamped.com";
+var PREVIEW=(function(){ var q=window.location.search, v=/[?&]view=(\w+)/.exec(q);
+  return { view:v?v[1]:'', signedIn:!!(v&&(v[1]=='signedin'||v[1]=='transfer')), air:!/[?&]noair=1/.test(q),
+           flash:/[?&]flash=1/.test(q), offline:/[?&]offline=1/.test(q), q:q }; })();
+function newXhr(){
+  var x={readyState:0,status:0,responseText:'',method:'GET',onreadystatechange:null};
+  x.open=function(method){ x.method=String(method).toUpperCase(); };
+  x.setRequestHeader=function(){};
+  x.abort=function(){};
+  x.send=function(){ window.setTimeout(function(){ x.readyState=4; x.status=(x.method=='GET'&&!PREVIEW.offline)?200:0; if(x.onreadystatechange) x.onreadystatechange(); },10); };
+  return x;
+}
+/* A pretend file system: the AIR app is there (unless &noair=1), a remembered sign-in for the
+   signed-in screens, the engine choice; every write goes nowhere. */
+function ActiveXObject(name){
+  if(name=='WScript.Shell') return { ExpandEnvironmentStrings:function(){ return 'C:\\preview'; }, Run:function(){} };
+  if(name!='Scripting.FileSystemObject') throw new Error('Not in the preview: '+name);
+  var text=function(t){ return { ReadAll:function(){ return t; }, Write:function(){}, Close:function(){} }; };
+  return {
+    FileExists:function(p){ p=String(p);
+      if(/DB Revamped\.exe$/i.test(p)) return PREVIEW.air;
+      if(/launcher-session\.txt$/i.test(p)) return PREVIEW.signedIn;
+      if(/engine\.txt$/i.test(p)) return PREVIEW.flash;
+      return false; },
+    FolderExists:function(){ return false; },
+    CreateFolder:function(){},
+    OpenTextFile:function(p){ p=String(p);
+      if(/launcher-session\.txt$/i.test(p)) return text(HOST+'\nplayer@example.com\npreview-token');
+      if(/engine\.txt$/i.test(p)) return text('flash');
+      return text(''); },
+    CreateTextFile:function(){ return text(''); },
+    DeleteFile:function(){},
+    GetFile:function(){ return { Size:0 }; }
+  };
+}
+function hereDir(){ return '.'; }
+var PROJ='flashplayer.exe';
+function fail(msg){ document.getElementById('root').innerHTML='<div id="boot" style="color:#e58a7f">'+msg+'</div>'; }
+window.onerror=function(msg){ fail("Launcher error: "+msg); return true; };
+</script>
+<script type="text/javascript" src="ui.js"></script>
+<script type="text/javascript">
+(function(){
+  var q=PREVIEW.q, v=PREVIEW.view;
+  if(v&&window.dbShow) window.dbShow(v);
+  var msg=document.getElementById('msg-'+(v||'signin'));
+  if(/[?&]msg=error/.test(q)&&msg){ msg.className='msg dbui-msg dbui-msg-error'; msg.innerHTML='Enter your email and password.'; }
+  if(/[?&]msg=info/.test(q)&&msg){ msg.className='msg dbui-msg'; msg.innerHTML=(v=='signedin')?'Press Play to start.':'Signing in...'; }
+  if(/[?&]fill=1/.test(q)){ var e=document.getElementById('signinEmail'), p=document.getElementById('signinPassword'); if(e) e.value='player@example.com'; if(p) p.value='example1'; if(document.activeElement&&document.activeElement.blur) document.activeElement.blur(); }
+  if(/[?&]menu=open/.test(q)){ var m=document.getElementById('dbToolsMenu'); if(m) m.className+=' open'; }
+})();
+</script>
+</body>
+</html>

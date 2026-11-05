@@ -34,7 +34,7 @@ package
    public class DBRevampedAir extends Sprite
    {
       /** What the app opens when started without a game URL (installer\DBRevamped.iss GameUrl). */
-      private static const LIVE_GAME:String = "http://dungeonblitzv.duckdns.org/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp";
+      private static const LIVE_GAME:String = "http://dbrevamped.com/p/cbp/DungeonBlitz.swf?fv=cbp&gv=cbp";
 
       private var started:Boolean = false;
       private var status:TextField;
