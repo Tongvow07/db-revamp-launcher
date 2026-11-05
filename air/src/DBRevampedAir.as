@@ -2,7 +2,10 @@ package
 {
    import flash.desktop.NativeApplication;
    import flash.display.Loader;
+   import flash.display.NativeWindow;
+   import flash.display.Screen;
    import flash.display.Sprite;
+   import flash.display.StageDisplayState;
    import flash.display.StageAlign;
    import flash.display.StageQuality;
    import flash.display.StageScaleMode;
@@ -10,8 +13,10 @@ package
    import flash.events.Event;
    import flash.events.IOErrorEvent;
    import flash.events.InvokeEvent;
+   import flash.events.KeyboardEvent;
    import flash.events.SecurityErrorEvent;
    import flash.events.UncaughtErrorEvent;
+   import flash.geom.Rectangle;
    import flash.net.URLLoader;
    import flash.net.URLLoaderDataFormat;
    import flash.net.URLRequest;
@@ -20,6 +25,7 @@ package
    import flash.text.TextField;
    import flash.text.TextFieldAutoSize;
    import flash.text.TextFormat;
+   import flash.ui.Keyboard;
 
    /**
     * DB Revamped in Adobe AIR's runtime instead of the Flash Player 32 projector.
@@ -39,6 +45,10 @@ package
       private var started:Boolean = false;
       private var status:TextField;
       private var page:String = "";
+      /** dbScreen=WxH: the window's game area when not in full screen; 0 for a maximised window. */
+      private var windowWidth:int = 0;
+      private var windowHeight:int = 0;
+      private var toggleHeld:Boolean = false;
 
       public function DBRevampedAir()
       {
@@ -80,13 +90,138 @@ package
             page = LIVE_GAME;
          }
          started = true;
+         screenStart(flashvars(page));
          status.text = "Loading DB Revamped...";
          var download:URLLoader = new URLLoader();
          download.dataFormat = URLLoaderDataFormat.BINARY;
          download.addEventListener(Event.COMPLETE, onDownloaded);
          download.addEventListener(IOErrorEvent.IO_ERROR, onDownloadFailed);
          download.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onDownloadFailed);
-         download.load(new URLRequest(page));
+         download.load(new URLRequest(gameFileUrl(page)));
+      }
+
+      /**
+       * The game file's address without the launcher's one-time sign-in (dbLaunchEmail, dbLaunchCode):
+       * with it, every start was a new address and downloaded the whole file again; without it, the
+       * file comes from the cache once the server says it is unchanged. The game still gets the
+       * sign-in, from the flashvars (flashvars(page)).
+       */
+      private static function gameFileUrl(url:String) : String
+      {
+         var query:int = url.indexOf("?");
+         if (query < 0)
+         {
+            return url;
+         }
+         var kept:Array = [];
+         for each (var pair:String in url.substr(query + 1).split("#")[0].split("&"))
+         {
+            if (pair && !/^dbLaunch(Email|Code)=/i.test(pair))
+            {
+               kept.push(pair);
+            }
+         }
+         return url.substr(0, query) + (kept.length ? "?" + kept.join("&") : "");
+      }
+
+      /**
+       * The screen: full screen at the screen's own size by default, always drawn sharp (no scaled-up
+       * picture). dbScreen=WxH opens a window with a WxH game area instead, centred and kept on screen.
+       * F11 or Alt+Enter switches between full screen and the window (maximised when none was chosen).
+       * Esc stays the game's own key (chat, menus): AIR would leave full screen on it, so its default
+       * is cancelled while in full screen.
+       */
+      private function screenStart(vars:Object) : void
+      {
+         var size:Array = /^(\d{3,4})x(\d{3,4})$/.exec(String(vars.dbScreen || ""));
+         if (size && int(size[1]) >= 1024 && int(size[2]) >= 576)
+         {
+            windowWidth = int(size[1]);
+            windowHeight = int(size[2]);
+         }
+         stage.addEventListener(KeyboardEvent.KEY_DOWN, onScreenKey, true, int.MAX_VALUE);
+         stage.addEventListener(KeyboardEvent.KEY_DOWN, onScreenKey, false, int.MAX_VALUE);
+         stage.addEventListener(KeyboardEvent.KEY_UP, onScreenKeyUp, true, int.MAX_VALUE);
+         stage.addEventListener(KeyboardEvent.KEY_UP, onScreenKeyUp, false, int.MAX_VALUE);
+         setFullScreen(windowWidth == 0);
+         if (stage.nativeWindow)
+         {
+            stage.nativeWindow.activate();
+         }
+      }
+
+      private function setFullScreen(on:Boolean) : void
+      {
+         try
+         {
+            stage.fullScreenSourceRect = null;
+            stage.displayState = on ? StageDisplayState.FULL_SCREEN_INTERACTIVE : StageDisplayState.NORMAL;
+            if (!on)
+            {
+               placeWindow();
+            }
+         }
+         catch (error:Error)
+         {
+            trace("[DBRevampedAir] screen: " + error.message);
+         }
+      }
+
+      /** The chosen window size, centred on the screen it is on and never larger than its free area; else maximised. */
+      private function placeWindow() : void
+      {
+         var window:NativeWindow = stage.nativeWindow;
+         if (!window)
+         {
+            return;
+         }
+         if (windowWidth == 0)
+         {
+            window.maximize();
+            return;
+         }
+         window.restore();
+         var screens:Array = Screen.getScreensForRectangle(window.bounds);
+         var free:Rectangle = Screen(screens.length ? screens[0] : Screen.mainScreen).visibleBounds;
+         var chromeWidth:Number = window.width - stage.stageWidth;
+         var chromeHeight:Number = window.height - stage.stageHeight;
+         var width:Number = Math.min(windowWidth + chromeWidth, free.width);
+         var height:Number = Math.min(windowHeight + chromeHeight, free.height);
+         window.bounds = new Rectangle(
+            Math.round(free.x + (free.width - width) / 2),
+            Math.round(free.y + (free.height - height) / 2),
+            width,
+            height);
+      }
+
+      private function onScreenKey(event:KeyboardEvent) : void
+      {
+         if (event.keyCode == Keyboard.ESCAPE)
+         {
+            if (stage.displayState != StageDisplayState.NORMAL)
+            {
+               event.preventDefault();
+            }
+            return;
+         }
+         if (event.keyCode == Keyboard.F11 || (event.keyCode == Keyboard.ENTER && event.altKey))
+         {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            if (!toggleHeld)
+            {
+               toggleHeld = true;
+               setFullScreen(stage.displayState == StageDisplayState.NORMAL);
+            }
+         }
+      }
+
+      private function onScreenKeyUp(event:KeyboardEvent) : void
+      {
+         if (event.keyCode == Keyboard.F11 || event.keyCode == Keyboard.ENTER)
+         {
+            toggleHeld = false;
+         }
       }
 
       private function onDownloadFailed(event:ErrorEvent) : void

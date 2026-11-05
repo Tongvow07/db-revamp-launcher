@@ -15,7 +15,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   var HEALTH=SECURE_HOST+"/api/auth/discord/config";
   /* This launcher's version (the installer's AppVersion; dbui\build.js --verify checks they match) and
      where the newest one is announced. */
-  var LAUNCHER_VERSION="1.4.3";
+  var LAUNCHER_VERSION="1.4.4";
   var LATEST=SECURE_HOST+"/download/launcher.json";
   var SETUP_URL=SECURE_HOST+"/download/DB-Revamped-Setup.exe";
   var API_CREATE=SECURE_HOST+"/api/account/create";
@@ -152,6 +152,14 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     button('<span class="dbui-radio"></span>240 fps','dbSetFps(240)','slate','fps240','dbui-btn-small engine-opt fps-opt'),
     '</div>',
     '</div>',
+    '<div class="fps" id="screenBox">',
+    '<label class="dbui-label">DISPLAY</label>',
+    '<div class="engine-row">',
+    button('<span class="dbui-radio"></span>Full screen','dbSetScreen(\'full\')','slate','screenFull','dbui-btn-small engine-opt fps-opt'),
+    button('<span class="dbui-radio"></span>1600 x 900','dbSetScreen(\'1600x900\')','slate','screen1600x900','dbui-btn-small engine-opt fps-opt'),
+    button('<span class="dbui-radio"></span>1280 x 720','dbSetScreen(\'1280x720\')','slate','screen1280x720','dbui-btn-small engine-opt fps-opt'),
+    '</div>',
+    '</div>',
     '<div class="engine-hint dbui-dim" id="engineHint"></div>',
     '</div>',
     button('Played on another Dungeon Blitz server? Upload your save file here and we move your characters to your account.','dbShow(\'transfer\')','slate','','dbui-btn-multi transfer-btn'),
@@ -277,7 +285,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     a.disabled=!air; a.title=air?'Up to 240 fps':'The AIR engine is not installed; run the installer again';
     var opt='dbui-btn dbui-btn-small engine-opt', lit=' dbui-on', dim=' dbui-btn-slate'; a.className=opt+(on?lit:dim); f.className=opt+(on?dim:lit);
     if(h) h.innerHTML=(air?'':'AIR is not installed here, so Play uses Classic Flash. ')+(on?'':'Classic Flash runs at up to 60 fps; the frame rate applies to AIR. ')+'The game itself is downloaded from the server at every start, so both engines run the latest version with every patch.';
-    showFps(on); }
+    showFps(on); showScreen(on); }
   window.dbSetEngine=function(which){ if(which=='air'&&!hasAir()) return; saveEngine(which=='flash'?'flash':'air'); showEngine(); fitPanel(); };
 
   /* The frame rate the AIR engine aims for: 100 (the game's own target), 144 or 240, remembered in
@@ -291,6 +299,20 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     for(var i=0;i<FPS_CHOICES.length;i++){ var b=$('fps'+FPS_CHOICES[i]); if(!b) continue;
       b.disabled=!air; b.title=air?'':'For the AIR engine'; b.className=opt+(air&&FPS_CHOICES[i]==fps?lit:dim); } }
   window.dbSetFps=function(v){ if(!useAir()) return; saveFps(v); showFps(true); };
+
+  /* The display the AIR engine opens in: full screen at the screen's own size (the default), or a window
+     with a 1600x900 or 1280x720 game area. The game always draws at the size it is shown, so every
+     choice is sharp; there is no scaled-up option. Remembered in screen.txt and passed as dbScreen;
+     a window that does not fit this screen is greyed out. F11 or Alt+Enter switches in the game. */
+  var SCREEN_FILE=SESSION_DIR?SESSION_DIR+'\\screen.txt':null;
+  var SCREEN_CHOICES=['full','1600x900','1280x720'];
+  function screenFits(v){ if(v=='full') return true; var s=v.split('x'); try{ return screen.availWidth>=+s[0]&&screen.availHeight>=+s[1]; }catch(e){ return true; } }
+  function loadScreen(){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(SCREEN_FILE&&fso.FileExists(SCREEN_FILE)){ var ts=fso.OpenTextFile(SCREEN_FILE,1,false); var v=ts.ReadAll().replace(/\s+/g,''); ts.Close(); for(var i=0;i<SCREEN_CHOICES.length;i++) if(SCREEN_CHOICES[i]==v&&screenFits(v)) return v; } }catch(e){} return 'full'; }
+  function saveScreen(v){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!fso.FolderExists(SESSION_DIR)) fso.CreateFolder(SESSION_DIR); var ts=fso.CreateTextFile(SCREEN_FILE,true); ts.Write(v); ts.Close(); }catch(e){} }
+  function showScreen(air){ var cur=loadScreen(), opt='dbui-btn dbui-btn-small engine-opt fps-opt', lit=' dbui-on', dim=' dbui-btn-slate';
+    for(var i=0;i<SCREEN_CHOICES.length;i++){ var v=SCREEN_CHOICES[i], b=$('screen'+(v=='full'?'Full':v)); if(!b) continue; var fits=screenFits(v);
+      b.disabled=!air||!fits; b.title=!air?'For the AIR engine':(fits?'':'Larger than this screen'); b.className=opt+(air&&v==cur?lit:dim); } }
+  window.dbSetScreen=function(v){ if(!useAir()||!screenFits(v)) return; saveScreen(v); showScreen(true); };
   window.dbSwitchEngine=function(){ dbSetEngine(useAir()?'flash':'air'); };
 
   function clearSession(){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(SESSION_FILE&&fso.FileExists(SESSION_FILE)) fso.DeleteFile(SESSION_FILE,true); }catch(e){} }
@@ -340,6 +362,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
         var url=SWF+'?dbLaunchEmail='+encodeURIComponent(r.email)+'&dbLaunchCode='+r.launchCode;
         var exe=useAir()?AIR_EXE:PROJ;
         if(useAir()&&loadFps()!=100) url+='&dbFps='+loadFps();
+        if(useAir()&&loadScreen()!='full') url+='&dbScreen='+loadScreen();
         try{ new ActiveXObject('WScript.Shell').Run('"'+exe+'" "'+url+'"',1,false); setMsg('The game is opening - you are signed in.'); }
         catch(e){ setMsg('Could not start the game: '+e.message,true); }
         window.setTimeout(function(){ setBusy(false); },4000);

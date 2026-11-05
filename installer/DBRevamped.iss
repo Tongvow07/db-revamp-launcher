@@ -6,6 +6,12 @@
 ; Installs per user (no admin prompt) into %LOCALAPPDATA%\DB Revamped, with a Start Menu entry,
 ; an optional desktop shortcut and an entry in Settings > Apps for uninstalling.
 ;
+; 1.4.4 (2026-11-05): the AIR engine opens in full screen at the screen's own size, or in a 1600x900 /
+;        1280x720 window (launcher DISPLAY choice, screen.txt, dbScreen). Always drawn at the shown size,
+;        so always sharp: no scaled-up (GPU-stretched) option. F11 / Alt+Enter switch in the game; Esc
+;        stays the game's key. The AIR app downloads the game file without the one-time sign-in in its
+;        address, so the file is cached between starts.
+;
 ; 1.4.3 (2026-11-05): update notice. At start the launcher reads https://dbrevamped.com/download/launcher.json
 ;        ({"version":"x.y.z"}); when it is newer than LAUNCHER_VERSION in ui.js (kept equal to AppVersion
 ;        by dbui\build.js --verify), a gold UPDATE button opens the setup's download in the player's
@@ -49,7 +55,7 @@
 ; "DB Revamped (Classic Flash)" does the same in the Flash projector.
 
 #define AppName "DB Revamped"
-#define AppVersion "1.4.3"
+#define AppVersion "1.4.4"
 #define AppPublisher "DB Revamped"
 #define AppUrl "https://dbrevamped.com"
 ; Plain http: the game reads its http files, which an https page may not.
