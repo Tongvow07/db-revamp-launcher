@@ -15,7 +15,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   var HEALTH=SECURE_HOST+"/api/auth/discord/config";
   /* This launcher's version (the installer's AppVersion; dbui\build.js --verify checks they match) and
      where the newest one is announced. */
-  var LAUNCHER_VERSION="1.4.4";
+  var LAUNCHER_VERSION="1.4.5";
   var LATEST=SECURE_HOST+"/download/launcher.json";
   var SETUP_URL=SECURE_HOST+"/download/DB-Revamped-Setup.exe";
   var API_CREATE=SECURE_HOST+"/api/account/create";
@@ -53,8 +53,12 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     /* The panel: the kit's window, inside the painted rune frame (bounds match it). Its stone
        reaches a little past the box so no painted parchment shows at its edges; its battlement
        stands over the frame's top row of runes. */
-    ".panel{position:absolute;left:35.9%;top:31.4%;width:28.3%;height:47.6%;z-index:20;font-size:16px}",
+    /* Between the title's ribbon (about 27% down) and the footer line, centred: big enough that the
+       Welcome Back view (engine, frame rate, display) fits at full size instead of being shrunk. */
+    ".panel{position:absolute;left:32%;top:28.6%;width:36%;height:63%;z-index:20;font-size:16px}",
     ".panel.dbui-window{margin:0;padding:0;min-width:0}",
+    /* The view's name on the game's own stat plate (dbui-pill), so it reads clearly over the battlements. */
+    ".panel-title .dbui-pill{height:1.7em;line-height:1.7em;padding:0 .5em}",
     ".panel .dbui-frame{left:-.3em;right:-.3em;bottom:-.3em}",
     ".panel .dbui-title{left:-.3em;right:-.3em}",
     ".panel-body{position:absolute;left:1.5em;right:1.5em;top:2.3em;bottom:1.35em;padding:0 .2em;overflow:hidden}",
@@ -106,7 +110,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     '</div>',
     '<div class="panel dbui-window" id="panel">',
     '<span class="dbui-frame"></span>',
-    '<div class="panel-title dbui-title"><span id="panelTitle">Sign In</span></div>',
+    '<div class="panel-title dbui-title"><span class="dbui-pill" id="panelTitle">Sign In</span></div>',
     '<div class="panel-body" id="panelBody">',
     /* A newer launcher on the server (checkUpdate): one gold button on every view. */
     '<div class="update" id="updateBox" style="display:none">',
@@ -196,9 +200,12 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   var stage=document.getElementById('stage'); if(stage){ stage.style.backgroundImage="url('"+BG+"')"; }
 
   function $(id){return document.getElementById(id);}
-  /* Text scales with the window, so the panel looks the same at every launcher size. */
+  /* Text scales with the window, so the panel looks the same at every launcher size. A view shorter
+     than the panel sits in its middle rather than at the top. */
   function fitPanel(){ var p=$('panel'), s=$('stage'); if(!p||!s) return; var size=Math.max(9,Math.round(s.offsetWidth/1280*17)); p.style.fontSize=size+'px';
-    var b=$('panelBody'); if(!b) return; while(size>9&&b.scrollHeight>b.clientHeight+1){ size-=0.5; p.style.fontSize=size+'px'; } }
+    var b=$('panelBody'); if(!b) return; var v=view?$('view-'+view):null; if(v) v.style.marginTop='0';
+    while(size>9&&b.scrollHeight>b.clientHeight+1){ size-=0.5; p.style.fontSize=size+'px'; }
+    if(v){ var spare=b.clientHeight-(v.offsetTop+v.offsetHeight); if(spare>4) v.style.marginTop=Math.floor(spare/2)+'px'; } }
   fitPanel(); window.onresize=fitPanel;
   /* The HTA resizes its window just above; when that lands after the first fit, fit again. */
   window.setTimeout(fitPanel,300);
