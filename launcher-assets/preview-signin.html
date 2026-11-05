@@ -16,7 +16,8 @@
        &msg=error | &msg=info   a message on the screen
        &fill=1           a made-up email and password typed in, to show the fields' text
        &menu=open        the DB TOOLS menu open
-       &offline=1        the server status says offline -->
+       &offline=1        the server status says offline
+       &update=1         the server announces a newer launcher (the UPDATE button shows) -->
 <style>html,body{height:100%;margin:0;background:#070707;overflow:hidden;font-family:Georgia,serif;color:#f8f2ea}
 #boot{position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);text-align:center;font-size:13px;color:#a99a86}</style>
 </head>
@@ -27,10 +28,11 @@
 var HOST="https://dbrevamped.com";
 var PREVIEW=(function(){ var q=window.location.search, v=/[?&]view=(\w+)/.exec(q);
   return { view:v?v[1]:'', signedIn:!!(v&&(v[1]=='signedin'||v[1]=='transfer')), air:!/[?&]noair=1/.test(q),
-           flash:/[?&]flash=1/.test(q), offline:/[?&]offline=1/.test(q), q:q }; })();
+           flash:/[?&]flash=1/.test(q), offline:/[?&]offline=1/.test(q), update:/[?&]update=1/.test(q), q:q }; })();
 function newXhr(){
   var x={readyState:0,status:0,responseText:'',method:'GET',onreadystatechange:null};
-  x.open=function(method){ x.method=String(method).toUpperCase(); };
+  x.open=function(method,url){ x.method=String(method).toUpperCase();
+    if(/launcher\.json/.test(url)) x.responseText=PREVIEW.update?'{"version":"9.9.9"}':'{"version":"0.0.1"}'; };
   x.setRequestHeader=function(){};
   x.abort=function(){};
   x.send=function(){ window.setTimeout(function(){ x.readyState=4; x.status=(x.method=='GET'&&!PREVIEW.offline)?200:0; if(x.onreadystatechange) x.onreadystatechange(); },10); };

@@ -13,6 +13,11 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   var PLAIN_HOST=HOST.replace(/^https:/i,'http:');
   var SWF=PLAIN_HOST+"/p/cbp/DungeonBlitz.swf";
   var HEALTH=SECURE_HOST+"/api/auth/discord/config";
+  /* This launcher's version (the installer's AppVersion; dbui\build.js --verify checks they match) and
+     where the newest one is announced. */
+  var LAUNCHER_VERSION="1.4.3";
+  var LATEST=SECURE_HOST+"/download/launcher.json";
+  var SETUP_URL=SECURE_HOST+"/download/DB-Revamped-Setup.exe";
   var API_CREATE=SECURE_HOST+"/api/account/create";
   var API_LOGIN=SECURE_HOST+"/api/auth/launcher/password-login";
   var API_PLAY=SECURE_HOST+"/api/auth/launcher/play";
@@ -78,6 +83,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     ".fps-opt{float:left;width:31.33%;margin:0}",
     ".fps-opt+.fps-opt{margin-left:3%}",
     ".transfer-btn{margin-top:.55em}",
+    ".update{margin-bottom:.45em}",
     /* While a request runs the buttons wait; the AIR choice greys out when AIR is not installed. */
     ".panel .dbui-btn[disabled]{cursor:wait}",
     ".panel .engine-opt[disabled]{cursor:default;opacity:.5}",
@@ -102,6 +108,11 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     '<span class="dbui-frame"></span>',
     '<div class="panel-title dbui-title"><span id="panelTitle">Sign In</span></div>',
     '<div class="panel-body" id="panelBody">',
+    /* A newer launcher on the server (checkUpdate): one gold button on every view. */
+    '<div class="update" id="updateBox" style="display:none">',
+    button('UPDATE AVAILABLE','dbUpdate()','','updateBtn','dbui-on'),
+    '<div class="engine-hint dbui-dim" id="updateHint"></div>',
+    '</div>',
     /* Sign in */
     '<form class="view" id="view-signin" onsubmit="return false;">',
     '<label class="dbui-label first" for="signinEmail">EMAIL</label>'+field('signinEmail','text'),
@@ -207,6 +218,27 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   function checkServer(){ try{ var x=newXhr(); var done=false; x.open('GET',HEALTH+'?t='+new Date().getTime(),true);
     x.onreadystatechange=function(){ if(x.readyState==4&&!done){done=true;setServer(x.status==200);} }; x.send();
     window.setTimeout(function(){ if(!done){done=true;try{x.abort();}catch(e){}setServer(false);} },4000); }catch(e){ setServer(false); } }
+
+  /* Updates: at start the launcher reads launcher.json ({"version":"x.y.z"}) from the server. When it
+     names a newer version, the gold button opens the installer's download in the player's browser;
+     running it installs over this one and keeps the sign-in. The launcher itself never downloads or
+     runs a program (see installer\DBRevamped.iss on why), and the address is fixed here, not taken
+     from the file. */
+  var latestVersion=null;
+  function newerThan(a,b){ var x=String(a).split('.'), y=String(b).split('.');
+    for(var i=0;i<3;i++){ var p=parseInt(x[i],10)||0, q=parseInt(y[i],10)||0; if(p!=q) return p>q; } return false; }
+  function showUpdate(){ var box=$('updateBox'); if(!box||!latestVersion) return;
+    box.style.display='';
+    var t=$('updateBtn'); if(t) t.getElementsByTagName('span')[1].innerHTML='UPDATE TO '+esc(latestVersion);
+    var h=$('updateHint'); if(h) h.innerHTML='A new launcher is out (you have '+esc(LAUNCHER_VERSION)+'). Click to download it, then run it: it installs over this one and keeps your sign-in.';
+    fitPanel(); }
+  function checkUpdate(){ try{ var x=newXhr(); x.open('GET',LATEST+'?t='+new Date().getTime(),true);
+    x.onreadystatechange=function(){ if(x.readyState!=4||x.status!=200) return; var r=null; try{ r=JSON.parse(x.responseText); }catch(e){}
+      var v=r&&typeof r.version=='string'?r.version:''; if(/^\d+\.\d+\.\d+$/.test(v)&&newerThan(v,LAUNCHER_VERSION)){ latestVersion=v; showUpdate(); } };
+    x.send(); }catch(e){} }
+  window.dbUpdate=function(){ try{ new ActiveXObject('WScript.Shell').Run(SETUP_URL,1,false);
+      var h=$('updateHint'); if(h) h.innerHTML='The download is open in your browser. Close this launcher, run DB Revamped Setup when the download finishes, then open DB Revamped again.'; fitPanel(); }
+    catch(e){ setMsg('Could not open your browser. Download the new launcher from '+esc(SETUP_URL),true); } };
 
   /* POST JSON, call back with (status, parsedBody). */
   function post(url,body,cb){
@@ -435,4 +467,5 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   session=loadSession();
   dbShow(session?'signedin':'signin');
   checkServer(); window.setInterval(checkServer,3000);
+  checkUpdate();
 })();

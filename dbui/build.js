@@ -888,6 +888,13 @@ function verify(manifest, temp) {
     if (!fs.existsSync(preview) || !/src="ui\.js"/.test(fs.readFileSync(preview, 'utf8'))) {
         failures.push('launcher-assets\\preview-signin.html is missing or does not load ui.js');
     }
+    // 8. The version ui.js reports (its update check compares it) is the installer's.
+    const installer = fs.readFileSync(path.join(ASSETS, '..', 'installer', 'DBRevamped.iss'), 'utf8');
+    const issVersion = (installer.match(/#define AppVersion "([^"]+)"/) || [])[1];
+    const uiVersion = (ui.match(/var LAUNCHER_VERSION="([^"]+)"/) || [])[1];
+    if (!issVersion || issVersion !== uiVersion) {
+        failures.push(`ui.js LAUNCHER_VERSION (${uiVersion}) is not installer\\DBRevamped.iss AppVersion (${issVersion})`);
+    }
     return { failures, notes };
 }
 

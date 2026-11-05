@@ -6,6 +6,13 @@
 ; Installs per user (no admin prompt) into %LOCALAPPDATA%\DB Revamped, with a Start Menu entry,
 ; an optional desktop shortcut and an entry in Settings > Apps for uninstalling.
 ;
+; 1.4.3 (2026-11-05): update notice. At start the launcher reads https://dbrevamped.com/download/launcher.json
+;        ({"version":"x.y.z"}); when it is newer than LAUNCHER_VERSION in ui.js (kept equal to AppVersion
+;        by dbui\build.js --verify), a gold UPDATE button opens the setup's download in the player's
+;        browser. The launcher still downloads and runs nothing itself (Defender history below).
+;        Releasing a launcher: upload the setup to download\DB-Revamped-Setup.exe, then set
+;        download\launcher.json to its version. Setup skips its Ready page, so an update is two clicks.
+;
 ; 1.4.2 (2026-11-05): a FRAME RATE choice under ENGINE (100 / 144 / 240 fps, AIR only), remembered in
 ;        %APPDATA%\DBRevamped\fps.txt and passed to the game as dbFps.
 ;
@@ -42,7 +49,7 @@
 ; "DB Revamped (Classic Flash)" does the same in the Flash projector.
 
 #define AppName "DB Revamped"
-#define AppVersion "1.4.2"
+#define AppVersion "1.4.3"
 #define AppPublisher "DB Revamped"
 #define AppUrl "https://dbrevamped.com"
 ; Plain http: the game reads its http files, which an https page may not.
@@ -59,6 +66,7 @@ AppSupportURL={#AppUrl}
 DefaultDirName={localappdata}\{#AppName}
 DisableDirPage=yes
 DisableProgramGroupPage=yes
+DisableReadyPage=yes
 DefaultGroupName={#AppName}
 PrivilegesRequired=lowest
 OutputDir=..\dist
