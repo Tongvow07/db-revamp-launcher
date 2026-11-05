@@ -6,6 +6,10 @@
 ; Installs per user (no admin prompt) into %LOCALAPPDATA%\DB Revamped, with a Start Menu entry,
 ; an optional desktop shortcut and an entry in Settings > Apps for uninstalling.
 ;
+; 1.4.0 (2026-11-05): every launcher screen is built from the game's own UI art (launcher-assets\dbui, made by
+;        dbui\build.js) with the game font, and the launcher talks to https://dbrevamped.com. Same
+;        structure as 1.3.0: mshta runs only the installed ui.js; setup starts nothing.
+;
 ; 1.3.0: the launcher window is back. The main shortcuts open DungeonBlitzR.hta in Windows' own
 ; mshta.exe; its screen is launcher-assets\ui.js, installed beside it. The launcher signs in,
 ; registers, sends account transfers, and starts the game in the engine the player picks on its
@@ -32,7 +36,7 @@
 ; "DB Revamped (Classic Flash)" does the same in the Flash projector.
 
 #define AppName "DB Revamped"
-#define AppVersion "1.3.0"
+#define AppVersion "1.4.0"
 #define AppPublisher "DB Revamped"
 #define AppUrl "https://dbrevamped.com"
 ; Plain http: the game reads its http files, which an https page may not.
