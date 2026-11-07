@@ -6,6 +6,11 @@
 ; Installs per user (no admin prompt) into %LOCALAPPDATA%\DB Revamped, with a Start Menu entry,
 ; an optional desktop shortcut and an entry in Settings > Apps for uninstalling.
 ;
+; 1.4.7 (2026-11-07): Refresh always brings the game back. A game still open 6 s after its Refresh is ended
+;        (our own game only, by its exact path), then Play is pressed again, retried every 3 s while the server
+;        restarts (up to 5 minutes). DB Tools > Force close game ends a stuck game. A Refresh left while no launcher
+;        was watching (in the last 10 minutes) starts the game as soon as the launcher opens and is signed in.
+;
 ; 1.4.6 (2026-11-07): after Play the launcher steps out of sight and keeps watching while the game runs, so a
 ;        server restart always brings the game back as a fresh copy (an in-place reload kept the old copy,
 ;        300-650 MB a time, until the game crawled). It comes back on screen once the game is closed. Game detection fixed: the old check
@@ -63,7 +68,7 @@
 ; "DB Revamped (Classic Flash)" does the same in the Flash projector.
 
 #define AppName "DB Revamped"
-#define AppVersion "1.4.6"
+#define AppVersion "1.4.7"
 #define AppPublisher "DB Revamped"
 #define AppUrl "https://dbrevamped.com"
 ; Plain http: the game reads its http files, which an https page may not.

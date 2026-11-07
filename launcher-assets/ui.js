@@ -15,7 +15,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   var HEALTH=SECURE_HOST+"/api/auth/discord/config";
   /* This launcher's version (the installer's AppVersion; dbui\build.js --verify checks they match) and
      where the newest one is announced. */
-  var LAUNCHER_VERSION="1.4.6";
+  var LAUNCHER_VERSION="1.4.7";
   var LATEST=SECURE_HOST+"/download/launcher.json";
   var SETUP_URL=SECURE_HOST+"/download/DB-Revamped-Setup.exe";
   var API_CREATE=SECURE_HOST+"/api/account/create";
@@ -106,6 +106,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     '<div class="server-pill dbui-pill"><span class="dbui-dot" id="statusDot"></span><span id="statusText">checking...</span></div>',
     '<div class="db-tools-hitbox dbui-hotspot" id="dbToolsBtn" title="Open DB Tools"><span class="dbui-hover-rim"></span></div>',
     '<div class="'+TOOLS_MENU+'" id="dbToolsMenu">',
+    '<div class="'+TOOL_ITEM+'" onclick="dbForceClose()"><span>&#10006;</span>Force close game</div>',
     '<div class="'+TOOL_ITEM+'" onclick="onToolClick(\'Gear Library\')"><span>&#10070;</span>Gear Library</div>',
     '<div class="'+TOOL_ITEM+'" onclick="onToolClick(\'Stat Calculator\')"><span>&#10070;</span>Stat Calculator</div>',
     '<div class="'+TOOL_ITEM+'" onclick="onToolClick(\'Item Spawner\')"><span>&#10070;</span>Item Spawner</div>',
@@ -233,7 +234,10 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   function setServer(up){ serverUp=up; var d=$('statusDot'), s=$('statusText');
     if(d){ d.className=up?'dbui-dot dbui-on':'dbui-dot'; }
     if(s){ s.innerHTML=up?'online':'offline'; } }
-  function checkServer(){ try{ var x=newXhr(); var done=false; x.open('GET',HEALTH+'?t='+new Date().getTime(),true);
+  /* 1.4.7: short timeouts on every request (ServerXMLHTTP only; others ignore it). Without them a request to
+     a server that has just gone away could hang the launcher, which then never restarted the game. */
+  function quick(x){ try{ x.setTimeouts(4000,4000,8000,8000); }catch(e){} return x; }
+  function checkServer(){ try{ var x=quick(newXhr()); var done=false; x.open('GET',HEALTH+'?t='+new Date().getTime(),true);
     x.onreadystatechange=function(){ if(x.readyState==4&&!done){done=true;setServer(x.status==200);} }; x.send();
     window.setTimeout(function(){ if(!done){done=true;try{x.abort();}catch(e){}setServer(false);} },4000); }catch(e){ setServer(false); } }
 
@@ -250,7 +254,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     var t=$('updateBtn'); if(t) t.getElementsByTagName('span')[1].innerHTML='UPDATE TO '+esc(latestVersion);
     var h=$('updateHint'); if(h) h.innerHTML='A new launcher is out (you have '+esc(LAUNCHER_VERSION)+'). Click to download it, then run it: it installs over this one and keeps your sign-in.';
     fitPanel(); }
-  function checkUpdate(){ try{ var x=newXhr(); x.open('GET',LATEST+'?t='+new Date().getTime(),true);
+  function checkUpdate(){ try{ var x=quick(newXhr()); x.open('GET',LATEST+'?t='+new Date().getTime(),true);
     x.onreadystatechange=function(){ if(x.readyState!=4||x.status!=200) return; var r=null; try{ r=JSON.parse(x.responseText); }catch(e){}
       var v=r&&typeof r.version=='string'?r.version:''; if(/^\d+\.\d+\.\d+$/.test(v)&&newerThan(v,LAUNCHER_VERSION)){ latestVersion=v; showUpdate(); } };
     x.send(); }catch(e){} }
@@ -260,10 +264,13 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
 
   /* POST JSON, call back with (status, parsedBody). */
   function post(url,body,cb){
-    try{ var x=newXhr(); x.open('POST',url,true); x.setRequestHeader('Content-Type','application/json');
-      x.onreadystatechange=function(){ if(x.readyState!=4) return; var r={}; try{ r=JSON.parse(x.responseText); }catch(e){} cb(x.status,r||{}); };
+    var done=false, finish=function(status,r){ if(done) return; done=true; cb(status,r); };
+    try{ var x=quick(newXhr()); x.open('POST',url,true); x.setRequestHeader('Content-Type','application/json');
+      x.onreadystatechange=function(){ if(x.readyState!=4) return; var r={}; try{ r=JSON.parse(x.responseText); }catch(e){} finish(x.status,r||{}); };
       x.send(body);
-    }catch(e){ cb(0,{error:e.message}); }
+      /* No answer in 15 s counts as no connection (status 0). */
+      window.setTimeout(function(){ if(!done){ try{ x.abort(); }catch(e){} finish(0,{}); } },15000);
+    }catch(e){ finish(0,{error:e.message}); }
   }
   function netError(status,r,fallback){
     if(status===0) return "Can't reach the server. Check your connection and try again.";
@@ -359,11 +366,13 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     });
   };
 
-  window.dbPlay=function(){
+  /* onRetry (a Refresh's relaunch only): called instead of the error message when the server could not be
+     reached or failed (status 0 or 5xx), so the relaunch tries again while the server restarts. */
+  window.dbPlay=function(onRetry){
     /* The game's Refresh signs itself in with the saved token and saves the rotated one, so the
        file can be newer than what this launcher read when it opened. */
     var saved=loadSession(); if(saved&&session) session=saved;
-    if(busy||!session) return;
+    if(busy||!session){ if(onRetry) onRetry(); return; }
     setBusy(true); setMsg('Starting the game...');
     post(API_PLAY,'{"token":"'+jesc(session.token)+'"}',function(status,r){
       if(status==200&&r.ok&&r.token&&r.launchCode){
@@ -373,16 +382,19 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
         var exe=useAir()?AIR_EXE:PROJ;
         if(useAir()&&loadFps()!=100) url+='&dbFps='+loadFps();
         if(useAir()&&loadScreen()!='full') url+='&dbScreen='+loadScreen();
+        relaunching=false;
         try{ new ActiveXObject('WScript.Shell').Run('"'+exe+'" "'+url+'"',1,false); setMsg('The game is opening - you are signed in.'); awaitingGame=true; }
-        catch(e){ setMsg('Could not start the game: '+e.message,true); }
+        catch(e){ comeBack(); setMsg('Could not start the game: '+e.message,true); }
         window.setTimeout(function(){ setBusy(false); },4000);
         return;
       }
       setBusy(false);
+      if(onRetry&&(status===0||status>=500)){ onRetry(); return; }
+      relaunching=false;
       if(status==401||status==403){
         var why=(r&&r.message)?r.message:'Your sign-in has expired. Please sign in again.';
-        var email=session.email; session=null; clearSession(); $('signinEmail').value=email; dbShow('signin'); setMsg(why,true);
-      } else setMsg(netError(status,r,'Could not start the game.'),true);
+        var email=session.email; session=null; clearSession(); $('signinEmail').value=email; comeBack(); dbShow('signin'); setMsg(why,true);
+      } else { comeBack(); setMsg(netError(status,r,'Could not start the game.'),true); }
     });
   };
 
@@ -463,13 +475,16 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
      a relaunch flag: AIR writes %APPDATA%\DBRevamped\relaunch.flag, the Flash projector its shared
      object dbRelaunch.sol. Seeing one, the launcher waits for the game to be gone and presses Play
      again, so the player is back on their characters, signed in. The game only leaves the flag
-     while launcher-alive holds a recent time, which this writes every 2 seconds. Flags already
-     there when the launcher opens are old ones and are cleared unread. */
+     while launcher-alive holds a recent time, which this writes every 2 seconds. A flag found when
+     the launcher opens counts only if it is under 10 minutes old (FRESH_FLAG_MS below). */
   var ALIVE_FILE=SESSION_DIR?SESSION_DIR+'\\launcher-alive':null, AIR_FLAG=SESSION_DIR?SESSION_DIR+'\\relaunch.flag':null, relaunching=false;
   function soRoot(){ try{ return new ActiveXObject('WScript.Shell').ExpandEnvironmentStrings('%APPDATA%')+'\\Macromedia\\Flash Player\\#SharedObjects'; }catch(e){ return null; } }
   function touchAlive(){ try{ if(!ALIVE_FILE) return; var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!fso.FolderExists(SESSION_DIR)) fso.CreateFolder(SESSION_DIR); var ts=fso.CreateTextFile(ALIVE_FILE,true); ts.Write(String(new Date().getTime())); ts.Close(); }catch(e){} }
-  function takeRelaunchFlag(){ var found=false; try{ var fso=new ActiveXObject('Scripting.FileSystemObject');
-      var take=function(p){ if(p&&fso.FileExists(p)){ try{ fso.DeleteFile(p,true); }catch(e){} found=true; } };
+  /* Takes (deletes) every relaunch flag; true if one was there and, with maxAgeMs, no older than that. */
+  function takeRelaunchFlag(maxAgeMs){ var found=false; try{ var fso=new ActiveXObject('Scripting.FileSystemObject');
+      var take=function(p){ if(p&&fso.FileExists(p)){ var fresh=true;
+          if(maxAgeMs){ try{ fresh=(new Date().getTime()-new Date(fso.GetFile(p).DateLastModified).getTime())<=maxAgeMs; }catch(e){ fresh=false; } }
+          try{ fso.DeleteFile(p,true); }catch(e){} if(fresh) found=true; } };
       take(AIR_FLAG);
       var root=soRoot(); if(root&&fso.FolderExists(root)){ for(var a=new Enumerator(fso.GetFolder(root).SubFolders);!a.atEnd();a.moveNext()){ for(var b=new Enumerator(a.item().SubFolders);!b.atEnd();b.moveNext()){ take(b.item().Path+'\\dbRelaunch.sol'); } } }
     }catch(e){} return found; }
@@ -477,16 +492,39 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   /* WMI through SWbemLocator: the launcher page runs in a document mode where JScript's GetObject does not
      exist ('GetObject' is undefined), so the old GetObject('winmgmts:...') call threw every time and this
      always said "no game" -- the launcher could never see a running game. */
-  function gameRunning(){ try{ var mine=[AIR_EXE.toLowerCase(),PROJ.toLowerCase()];
-      var q=new ActiveXObject('WbemScripting.SWbemLocator').ConnectServer('.','root\\cimv2').ExecQuery("select ExecutablePath from Win32_Process where Name='flashplayer.exe' or Name='DB Revamped.exe'");
-      for(var e=new Enumerator(q);!e.atEnd();e.moveNext()){ var at=String(e.item().ExecutablePath||'').toLowerCase(); if(at==mine[0]||at==mine[1]) return true; } }catch(e){} return false; }
+  function gameProcesses(){ var out=[]; try{ var mine=[AIR_EXE.toLowerCase(),PROJ.toLowerCase()];
+      var q=new ActiveXObject('WbemScripting.SWbemLocator').ConnectServer('.','root\\cimv2').ExecQuery("select ProcessId,ExecutablePath from Win32_Process where Name='flashplayer.exe' or Name='DB Revamped.exe'");
+      for(var e=new Enumerator(q);!e.atEnd();e.moveNext()){ var at=String(e.item().ExecutablePath||'').toLowerCase(); if(at==mine[0]||at==mine[1]) out.push(e.item()); } }catch(e){} return out; }
+  function gameRunning(){ return gameProcesses().length>0; }
+  /* Ends our own game by its exact path (never any other program): a game stuck on a dead server, or one
+     a Refresh left behind, is ended so a fresh copy can start (AIR runs one copy at a time). */
+  function killGame(){ var n=0, list=gameProcesses(); for(var i=0;i<list.length;i++){ try{ list[i].Terminate(); n++; }catch(e){} } return n; }
+  /* 1.4.7: Refresh always brings the game back. The game leaves the flag and closes; if it is still there
+     after 6 s (stuck), it is ended. Then Play, retried every 3 s while the server is still restarting
+     (up to 5 minutes), so a Refresh pressed during a restart still lands back in the game. */
   function relaunchWhenGone(tries){
     if(gameRunning()){
+      if(tries==12) killGame();
       if(tries<20){ window.setTimeout(function(){ relaunchWhenGone(tries+1); },500); return; }
-      relaunching=false; setMsg('Close the game, then press Play.'); return;
+      relaunching=false; comeBack(); setMsg('The game did not close. Use Force close game (DB Tools), then press Play.',true); return;
     }
-    window.setTimeout(function(){ relaunching=false; if(!session){ setMsg('Sign in and press Play to start again.'); return; } if(view!='signedin') dbShow('signedin'); dbPlay(); },800);
+    window.setTimeout(function(){ playWhenServerUp(0); },800);
   }
+  /* serverUp can be a few seconds old, so a Play that cannot reach the server (or gets a 5xx) also waits
+     and tries again; relaunching stays on until the game is started or the 5 minutes are up. */
+  function playWhenServerUp(tries){
+    if(!session){ relaunching=false; comeBack(); setMsg('Sign in and press Play to start again.'); return; }
+    var again=function(){
+      if(tries<100){ setMsg('Waiting for the server to restart the game...'); window.setTimeout(function(){ playWhenServerUp(tries+1); },3000); return; }
+      relaunching=false; comeBack(); setMsg('The server is not back yet. Press Play to try again.',true); };
+    if(!serverUp||busy){ again(); return; }
+    if(view!='signedin') dbShow('signedin');
+    dbPlay(function(){ again(); });
+  }
+  /* Back on screen (from out of sight) to say something the player must act on. */
+  function comeBack(){ if(outOfSight){ outOfSight=false; awaitingGame=false; goneChecks=0; placeLauncher(); try{ window.focus(); }catch(e){} } }
+  window.dbForceClose=function(){ var m=$('dbToolsMenu'); if(m)m.className=TOOLS_MENU;
+    var n=killGame(); setMsg(n?'The game was closed. Press Play to start it again.':'The game is not running.'); };
   /* While the game runs the launcher steps out of sight and keeps watching, so a server restart always
      brings the game back as a fresh copy (DB-FPS-LEAK-2026-11-06.md: a game that reloads itself in its
      own process keeps the old copy, 300-650 MB each time, until it crawls). Closing the launcher was
@@ -507,7 +545,12 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     awaitingGame=false; outOfSight=false; goneChecks=0; placeLauncher(); try{ window.focus(); }catch(e){} setMsg('');
   }
   function watchGame(){ touchAlive(); if(!relaunching&&takeRelaunchFlag()){ relaunching=true; setMsg('Restarting the game...'); relaunchWhenGone(0); } followGame(); }
-  takeRelaunchFlag(); watchGame(); window.setInterval(watchGame,2000);
+  /* 1.4.7: a flag left in the last 10 minutes while no launcher was watching (it was closed, or the game was
+     started from the Direct shortcut) is a Refresh still waiting: once signed in and with the old game gone,
+     the game starts again. Older flags are cleared unread. */
+  var FRESH_FLAG_MS=600000, startRelaunch=takeRelaunchFlag(FRESH_FLAG_MS);
+  watchGame(); window.setInterval(watchGame,2000);
+  if(startRelaunch){ relaunching=true; window.setTimeout(function(){ setMsg('Restarting the game...'); relaunchWhenGone(0); },1500); }
 
   (function(){ var btn=$('dbToolsBtn'), menu=$('dbToolsMenu');
     if(btn&&menu){ btn.onclick=function(e){ var ev=e||window.event; if(ev.stopPropagation)ev.stopPropagation(); else ev.cancelBubble=true;
