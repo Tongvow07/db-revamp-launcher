@@ -15,7 +15,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   var HEALTH=SECURE_HOST+"/api/auth/discord/config";
   /* This launcher's version (the installer's AppVersion; dbui\build.js --verify checks they match) and
      where the newest one is announced. */
-  var LAUNCHER_VERSION="1.4.5";
+  var LAUNCHER_VERSION="1.4.6";
   var LATEST=SECURE_HOST+"/download/launcher.json";
   var SETUP_URL=SECURE_HOST+"/download/DB-Revamped-Setup.exe";
   var API_CREATE=SECURE_HOST+"/api/account/create";
@@ -30,9 +30,12 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     var s=document.getElementsByTagName('script');
     for(var i=s.length-1;i>=0;i--){ var src=s[i].getAttribute('src')||''; if(/(^|[\/\\])ui\.js(\?.*)?$/i.test(src)) return src.replace(/ui\.js(\?.*)?$/i,''); }
     return 'launcher-assets/'; })();
-  try{ var ar=1280/690; var W=Math.min(1120,screen.availWidth-24); var H=Math.round((W-16)/ar+38);
+  /* The window: centred, as large as the screen allows up to 1120 wide. Also how it comes back after
+     stepping out of sight while the game runs (watchGame). */
+  function placeLauncher(){ try{ var ar=1280/690; var W=Math.min(1120,screen.availWidth-24); var H=Math.round((W-16)/ar+38);
        if(H>screen.availHeight-24){ H=screen.availHeight-24; W=Math.round((H-38)*ar+16); }
-       window.resizeTo(W,H); window.moveTo(Math.max(0,(screen.width-W)/2), Math.max(0,(screen.availHeight-H)/2)); }catch(e){}
+       window.resizeTo(W,H); window.moveTo(Math.max(0,(screen.width-W)/2), Math.max(0,(screen.availHeight-H)/2)); }catch(e){} }
+  placeLauncher();
 
   /* The look is the DB UI kit (launcher-assets/dbui/dbui.css: the game's own window, field,
      button, check, menu and pill art, made by dbui/build.js from the client's UI files), loaded
@@ -370,7 +373,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
         var exe=useAir()?AIR_EXE:PROJ;
         if(useAir()&&loadFps()!=100) url+='&dbFps='+loadFps();
         if(useAir()&&loadScreen()!='full') url+='&dbScreen='+loadScreen();
-        try{ new ActiveXObject('WScript.Shell').Run('"'+exe+'" "'+url+'"',1,false); setMsg('The game is opening - you are signed in.'); }
+        try{ new ActiveXObject('WScript.Shell').Run('"'+exe+'" "'+url+'"',1,false); setMsg('The game is opening - you are signed in.'); awaitingGame=true; }
         catch(e){ setMsg('Could not start the game: '+e.message,true); }
         window.setTimeout(function(){ setBusy(false); },4000);
         return;
@@ -471,8 +474,11 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
       var root=soRoot(); if(root&&fso.FolderExists(root)){ for(var a=new Enumerator(fso.GetFolder(root).SubFolders);!a.atEnd();a.moveNext()){ for(var b=new Enumerator(a.item().SubFolders);!b.atEnd();b.moveNext()){ take(b.item().Path+'\\dbRelaunch.sol'); } } }
     }catch(e){} return found; }
   /* Our own game, by its exact path: the AIR app or the projector beside this launcher. */
+  /* WMI through SWbemLocator: the launcher page runs in a document mode where JScript's GetObject does not
+     exist ('GetObject' is undefined), so the old GetObject('winmgmts:...') call threw every time and this
+     always said "no game" -- the launcher could never see a running game. */
   function gameRunning(){ try{ var mine=[AIR_EXE.toLowerCase(),PROJ.toLowerCase()];
-      var q=GetObject('winmgmts:\\\\.\\root\\cimv2').ExecQuery("select ExecutablePath from Win32_Process where Name='flashplayer.exe' or Name='DB Revamped.exe'");
+      var q=new ActiveXObject('WbemScripting.SWbemLocator').ConnectServer('.','root\\cimv2').ExecQuery("select ExecutablePath from Win32_Process where Name='flashplayer.exe' or Name='DB Revamped.exe'");
       for(var e=new Enumerator(q);!e.atEnd();e.moveNext()){ var at=String(e.item().ExecutablePath||'').toLowerCase(); if(at==mine[0]||at==mine[1]) return true; } }catch(e){} return false; }
   function relaunchWhenGone(tries){
     if(gameRunning()){
@@ -481,7 +487,26 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     }
     window.setTimeout(function(){ relaunching=false; if(!session){ setMsg('Sign in and press Play to start again.'); return; } if(view!='signedin') dbShow('signedin'); dbPlay(); },800);
   }
-  function watchGame(){ touchAlive(); if(!relaunching&&takeRelaunchFlag()){ relaunching=true; setMsg('Restarting the game...'); relaunchWhenGone(0); } }
+  /* While the game runs the launcher steps out of sight and keeps watching, so a server restart always
+     brings the game back as a fresh copy (DB-FPS-LEAK-2026-11-06.md: a game that reloads itself in its
+     own process keeps the old copy, 300-650 MB each time, until it crawls). Closing the launcher was
+     what left players with no one to restart the game. It comes back on screen once the game is gone
+     for good (two checks in a row, not while a restart is under way), ready to Play again. */
+  var awaitingGame=false, outOfSight=false, goneChecks=0;
+  function followGame(){
+    if(relaunching){ goneChecks=0; return; }
+    if(gameRunning()){
+      goneChecks=0;
+      if(awaitingGame){ awaitingGame=false; if(!outOfSight){ outOfSight=true; try{ window.moveTo(-32000,-32000); }catch(e){} } }
+      return;
+    }
+    if(!outOfSight) return;
+    /* No game while out of sight. A fresh copy started by a restart gets a few seconds to appear (six
+       checks); otherwise two misses bring the launcher back, so it never stays hidden with no game. */
+    if(++goneChecks<(awaitingGame?6:2)) return;
+    awaitingGame=false; outOfSight=false; goneChecks=0; placeLauncher(); try{ window.focus(); }catch(e){} setMsg('');
+  }
+  function watchGame(){ touchAlive(); if(!relaunching&&takeRelaunchFlag()){ relaunching=true; setMsg('Restarting the game...'); relaunchWhenGone(0); } followGame(); }
   takeRelaunchFlag(); watchGame(); window.setInterval(watchGame,2000);
 
   (function(){ var btn=$('dbToolsBtn'), menu=$('dbToolsMenu');

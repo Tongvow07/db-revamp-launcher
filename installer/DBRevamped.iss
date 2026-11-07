@@ -6,6 +6,11 @@
 ; Installs per user (no admin prompt) into %LOCALAPPDATA%\DB Revamped, with a Start Menu entry,
 ; an optional desktop shortcut and an entry in Settings > Apps for uninstalling.
 ;
+; 1.4.6 (2026-11-07): after Play the launcher steps out of sight and keeps watching while the game runs, so a
+;        server restart always brings the game back as a fresh copy (an in-place reload kept the old copy,
+;        300-650 MB a time, until the game crawled). It comes back on screen once the game is closed. Game detection fixed: the old check
+;        (GetObject, undefined in the launcher page) never saw a running game.
+;
 ; 1.4.5 (2026-11-05): a bigger panel (36% x 63% of the window) whose views sit in its middle, so Welcome Back
 ;        fits at full size.
 ;
@@ -58,7 +63,7 @@
 ; "DB Revamped (Classic Flash)" does the same in the Flash projector.
 
 #define AppName "DB Revamped"
-#define AppVersion "1.4.5"
+#define AppVersion "1.4.6"
 #define AppPublisher "DB Revamped"
 #define AppUrl "https://dbrevamped.com"
 ; Plain http: the game reads its http files, which an https page may not.
