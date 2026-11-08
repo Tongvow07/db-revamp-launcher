@@ -105,9 +105,15 @@ package
        * with it, every start was a new address and downloaded the whole file again; without it, the
        * file comes from the cache once the server says it is unchanged. The game still gets the
        * sign-in, from the flashvars (flashvars(page)).
+       *
+       * 1.4.8: the live game file is fetched over https (the same file, byte for byte), so nobody on the
+       * player's network can hand the app a changed game in its place. Only the download moves: the
+       * game keeps its http address in its flashvars, and test servers (localhost) stay on http. The
+       * launcher's own sign-in already needs https, so this adds no new way for a start to fail.
        */
       private static function gameFileUrl(url:String) : String
       {
+         url = url.replace(/^http:\/\/((www\.)?dbrevamped\.com)([\/?#]|$)/i, "https://$1$3");
          var query:int = url.indexOf("?");
          if (query < 0)
          {

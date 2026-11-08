@@ -6,6 +6,14 @@
 ; Installs per user (no admin prompt) into %LOCALAPPDATA%\DB Revamped, with a Start Menu entry,
 ; an optional desktop shortcut and an entry in Settings > Apps for uninstalling.
 ;
+; 1.4.8 (2026-11-08): the DB Tools menu is gone, and its painted sign is taken out of the background
+;        (dbui\title.js toolsSign). Force close game now appears in the message shown when a game will not
+;        close. The AIR engine downloads the live game file over https (the same file), so it cannot be
+;        swapped on the player's network; the game keeps its http address for its own files. No new
+;        program, nothing downloaded and run: same structure as 1.3.0 (Defender history below). A tray
+;        icon was left out on purpose: an HTA cannot leave the taskbar while running, and a helper exe
+;        is what Defender flagged in 1.1.1; revisit with a code-signing certificate.
+;
 ; 1.4.7 (2026-11-07): Refresh always brings the game back. A game still open 6 s after its Refresh is ended
 ;        (our own game only, by its exact path), then Play is pressed again, retried every 3 s while the server
 ;        restarts (up to 5 minutes). DB Tools > Force close game ends a stuck game. A Refresh left while no launcher
@@ -68,7 +76,7 @@
 ; "DB Revamped (Classic Flash)" does the same in the Flash projector.
 
 #define AppName "DB Revamped"
-#define AppVersion "1.4.7"
+#define AppVersion "1.4.8"
 #define AppPublisher "DB Revamped"
 #define AppUrl "https://dbrevamped.com"
 ; Plain http: the game reads its http files, which an https page may not.

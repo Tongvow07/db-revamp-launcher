@@ -61,6 +61,14 @@ const LAYOUT = {
         pColumns: [713, 758], gap: 3, scale: 0.88, centre: 640, bottom: 171,
         foliage: { from: 147, blend: 8, y0: 181, y1: 186, strength: 1 }, stoneU: -300, stoneV: 120, stoneGrain: 0.25 },
     title: { x0: 434, x1: 846, y0: 55, y1: 113 },
+    // The painted "DB TOOLS" sign (gear, plate and chevron, top right), taken out in 1.4.8 with its
+    // menu (owner, 2026-11-08). Its shapes, a margin round them, and the area searched for them.
+    toolsSign: {
+        circles: [[1170, 61, 41], [1119, 80, 21], [1222, 80, 21]],
+        boxes: [[1078, 85, 1265, 129]],
+        polygons: [[[1086, 125], [1258, 125], [1246, 143], [1171, 160], [1097, 143]]],
+        margin: 4, box: [1070, 16, 1272, 168], grain: 2.5
+    },
     jpegQuality: 0.9
 };
 
@@ -527,7 +535,49 @@ window.buildTitle = async (o) => {
   const name = D.title.letters ? await letterLine(o.letters, D.title) : styledText(D.title);
   const B = D.title.box || L.title;
   const nameBox = place(g, name, (B.x0 + B.x1) / 2, (B.y0 + B.y1) / 2, B.x1 - B.x0, B.y1 - B.y0);
-  return { jpeg: canvas.toDataURL('image/jpeg', o.quality), rebuilt, leftovers, nameBox, wordBox, width: canvas.width, height: canvas.height };
+  const toolsSign = L.toolsSign ? removeToolsSign(g, L.toolsSign) : 0;
+  return { jpeg: canvas.toDataURL('image/jpeg', o.quality), rebuilt, leftovers, nameBox, wordBox, toolsSign, width: canvas.width, height: canvas.height };
+};
+
+/**
+ * Takes the painted "DB TOOLS" sign out of the picture. Its gear, plate and chevron (circles, boxes,
+ * polygons, plus a margin) are refilled from the soft, out-of-focus treetops round them: each row
+ * starts as a blend of its two edges, then repeated averaging of the neighbours (the known pixels
+ * held) settles it into the surrounding light, and a little grain matches the painting's texture.
+ * Returns how many pixels were refilled.
+ */
+window.removeToolsSign = (g, T) => {
+  const [bx0, by0, bx1, by1] = T.box, m = T.margin;
+  const inPoly = (pts, x, y) => { let c = false; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) { const [xi, yi] = pts[i], [xj, yj] = pts[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; };
+  const inside = (x, y) => T.circles.some(([cx, cy, r]) => (x - cx) ** 2 + (y - cy) ** 2 <= r * r) ||
+    T.boxes.some(([x0, y0, x1, y1]) => x >= x0 && x <= x1 && y >= y0 && y <= y1) || T.polygons.some((p) => inPoly(p, x, y));
+  const bw = bx1 - bx0 + 1, bh = by1 - by0 + 1;
+  const hole = new Uint8Array(bw * bh);
+  for (let y = by0; y <= by1; y++) for (let x = bx0; x <= bx1; x++) {
+    let hit = false;
+    for (let dy = -m; dy <= m && !hit; dy++) for (let dx = -m; dx <= m; dx++) if (dx * dx + dy * dy <= m * m && inside(x + dx, y + dy)) { hit = true; break; }
+    if (hit) hole[(y - by0) * bw + x - bx0] = 1;
+  }
+  const img = g.getImageData(bx0, by0, bw, bh), d = img.data;
+  const val = new Float32Array(bw * bh * 3);
+  for (let k = 0; k < bw * bh; k++) for (let ch = 0; ch < 3; ch++) val[k * 3 + ch] = d[k * 4 + ch];
+  // Start each row as a straight blend between the known pixels either side of the hole.
+  for (let y = 0; y < bh; y++) {
+    let x = 0;
+    while (x < bw) {
+      if (!hole[y * bw + x]) { x++; continue; }
+      const s = x; while (x < bw && hole[y * bw + x]) x++;
+      const a = Math.max(0, s - 1), b = Math.min(bw - 1, x);
+      for (let i = s; i < x; i++) { const t = (i - a) / Math.max(1, b - a); for (let ch = 0; ch < 3; ch++) val[(y * bw + i) * 3 + ch] = val[(y * bw + a) * 3 + ch] * (1 - t) + val[(y * bw + b) * 3 + ch] * t; }
+    }
+  }
+  const list = []; for (let k = 0; k < bw * bh; k++) { const x = k % bw, y = (k - x) / bw; if (hole[k] && x > 0 && y > 0 && x < bw - 1 && y < bh - 1) list.push(k); }
+  for (let it = 0; it < 2500; it++) for (const k of list) for (let ch = 0; ch < 3; ch++) val[k * 3 + ch] = (val[(k - 1) * 3 + ch] + val[(k + 1) * 3 + ch] + val[(k - bw) * 3 + ch] + val[(k + bw) * 3 + ch]) / 4;
+  let seed = 11;
+  const noise = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return (seed / 0x7fffffff - 0.5) * 2 * T.grain; };
+  for (const k of list) { const n = noise(); for (let ch = 0; ch < 3; ch++) d[k * 4 + ch] = Math.max(0, Math.min(255, Math.round(val[k * 3 + ch] + n))); }
+  g.putImageData(img, bx0, by0);
+  return list.length;
 };
 
 /** Largest channel difference between two pictures, and the share of pixels off by more than 8. */
