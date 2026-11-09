@@ -31,13 +31,19 @@ package dbrevamped.relay
       public var originalPort:int = 0;
       public var hostPatches:int = 0;
       public var portPatches:int = 0;
+      /** The game's own frame rates that were replaced (Main: 30 on the menus, 100 in the game). */
+      public var frameRates:Array = [];
+      /** 1.5.4: the frame rate asked for (launcher FRAME RATE); 0 leaves the game's own. */
+      private var frameRate:int = 0;
 
       /**
        * The SWF with its login pointed at host:port, uncompressed (FWS), or null when the login
        * address could not be found exactly once each.
        */
-      public function patch(swf:ByteArray, host:String, port:int) : ByteArray
+      public function patch(swf:ByteArray, host:String, port:int, fps:int = 0) : ByteArray
       {
+         // The game's rates are pushbyte operands, so a new one fits up to 127 (Arc Launcher does the same).
+         frameRate = fps > 0 ? Math.max(1, Math.min(127, fps)) : 0;
          if (port <= 0 || port >= 16384)
          {
             throw new Error("the relay port must be below 16384 (it replaces a two-byte operand)");
@@ -156,6 +162,14 @@ package dbrevamped.relay
             writeU30(abc, hit.at, port, hit.len);
             portPatches++;
          }
+         if (frameRate)
+         {
+            for each (hit in findFrameRateConstants(abc, pool))
+            {
+               frameRates.push(hit.value);
+               abc[hit.at] = frameRate;
+            }
+         }
          return abc;
       }
 
@@ -242,7 +256,7 @@ package dbrevamped.relay
       }
 
       /** Indexes of the QName multinames whose name is `name`. */
-      private static function multinamesNamed(abc:ByteArray, pool:Object, name:String) : Array
+      private static function multinamesNamed(abc:ByteArray, pool:Object, name:String, anyKind:Boolean = false) : Array
       {
          var idx:int = (pool.strings as Array).indexOf(name);
          var out:Array = [];
@@ -300,7 +314,7 @@ package dbrevamped.relay
             {
                throw new Error("unknown multiname kind " + kind);
             }
-            if (nm == idx && (kind == 0x07 || kind == 0x0d))
+            if (nm == idx && (anyKind || kind == 0x07 || kind == 0x0d))
             {
                out.push(i);
             }
@@ -329,6 +343,56 @@ package dbrevamped.relay
                      hits.push({ at: opndAt, len: opnd.n, value: opnd.v });
                   }
                   at = indexOf(abc, head, at + 1);
+               }
+            }
+         }
+         return hits;
+      }
+
+      /**
+       * The constants the game puts into stage.frameRate (`getlex <const>; setproperty frameRate`), each
+       * set once with `findproperty <const>; pushbyte N; initproperty <const>`: the pushbyte operands.
+       */
+      private static function findFrameRateConstants(abc:ByteArray, pool:Object) : Array
+      {
+         var consts:Object = {};
+         for each (var f:int in multinamesNamed(abc, pool, "frameRate", true))
+         {
+            var tail:Array = [SETPROPERTY].concat(u30Bytes(f, 0));
+            var at:int = indexOf(abc, tail, 0);
+            while (at >= 0)
+            {
+               for (var n:int = 1; n <= 3; n++)
+               {
+                  var op:int = at - n - 1;
+                  if (op >= 0 && abc[op] == 0x60)
+                  {
+                     var r:Object = readU30(abc, op + 1);
+                     if (r.n == n)
+                     {
+                        consts[r.v] = true;
+                     }
+                  }
+               }
+               at = indexOf(abc, tail, at + 1);
+            }
+         }
+         var hits:Array = [];
+         for (var key:String in consts)
+         {
+            var mb:Array = u30Bytes(int(key), 0);
+            for each (var find:int in [FINDPROPERTY, FINDPROPSTRICT])
+            {
+               var head:Array = [find].concat(mb, [0x24]);
+               var h:int = indexOf(abc, head, 0);
+               while (h >= 0)
+               {
+                  var valueAt:int = h + head.length;
+                  if (abc[valueAt + 1] == INITPROPERTY && matches(abc, valueAt + 2, mb))
+                  {
+                     hits.push({ at: valueAt, value: abc[valueAt] });
+                  }
+                  h = indexOf(abc, head, h + 1);
                }
             }
          }

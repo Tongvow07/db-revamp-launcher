@@ -256,7 +256,7 @@ package
          {
             // The SWF reads its web address from `origin`: it runs from this app, not from its server.
             vars.origin = originOf(page);
-            game = throughRelay(game);
+            game = throughRelay(game, int(vars.dbFps));
          }
          context.parameters = vars;
          var loader:Loader = new Loader();
@@ -271,18 +271,20 @@ package
        * Another server's game, logging in through ServerRelay so the launcher can offer its characters
        * for transfer. If its login address cannot be found, the game runs as it came (no transfer list).
        */
-      private function throughRelay(game:ByteArray) : ByteArray
+      private function throughRelay(game:ByteArray, fps:int) : ByteArray
       {
          try
          {
             relay = new ServerRelay(originOf(page));
             var port:int = relay.reserve();
             var patcher:SwfLoginPatch = new SwfLoginPatch();
-            var patched:ByteArray = patcher.patch(game, "127.0.0.1", port);
+            // dbFps (the launcher's FRAME RATE above 100) replaces the game's own frame rates, up to 127.
+            var patched:ByteArray = patcher.patch(game, "127.0.0.1", port, fps > 100 ? fps : 0);
             if (patched)
             {
                relay.assign(port, patcher.originalHost, patcher.originalPort);
-               trace("[DBRevampedAir] login " + patcher.originalHost + ":" + patcher.originalPort + " through 127.0.0.1:" + port);
+               trace("[DBRevampedAir] login " + patcher.originalHost + ":" + patcher.originalPort + " through 127.0.0.1:" + port +
+                  (patcher.frameRates.length ? "; frame rates " + patcher.frameRates.join(",") + " -> " + Math.min(127, fps) : ""));
                return patched;
             }
             trace("[DBRevampedAir] login address not found (host " + patcher.hostPatches + ", port " + patcher.portPatches + "): no relay");

@@ -15,7 +15,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   var HEALTH=SECURE_HOST+"/api/auth/discord/config";
   /* This launcher's version (the installer's AppVersion; dbui\build.js --verify checks they match) and
      where the newest one is announced. */
-  var LAUNCHER_VERSION="1.5.3";
+  var LAUNCHER_VERSION="1.5.4";
   var LATEST=SECURE_HOST+"/download/launcher.json";
   var SETUP_URL=SECURE_HOST+"/download/DB-Revamped-Setup.exe";
   var API_CREATE=SECURE_HOST+"/api/account/create";
@@ -523,7 +523,10 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     return base.replace(/[?#].*$/,'').replace(/[^\/]*$/,'')+ref; }
   function findSwf(html,base){ var m=/(?:const|let|var)\s+swfUrl\s*=\s*[\x60'"]([^\x60'"]*DungeonBlitz\.swf[^\x60'"]*)[\x60'"]/i.exec(html)||/(?:data|src|movie)\s*[=:]\s*['"]([^'"]*DungeonBlitz\.swf[^'"]*)['"]/i.exec(html);
     if(!m) return null; var raw=m[1].replace(/\$\{languageParam\}/g,'').replace(/&amp;/g,'&'); if(/\$\{/.test(raw)) return null; return absoluteUrl(raw,base); }
+  /* 1.5.4: the FRAME RATE choice goes along as dbFps; the AIR engine raises the other game's own frame rates to it
+     (at most 127: Arc Launcher's limit, the rates are one-byte values in the game file). */
   function startOther(swfUrl){ var url=swfUrl; if(loadScreen()!='full') url+=(url.indexOf('?')<0?'?':'&')+'dbScreen='+loadScreen();
+    if(loadFps()>100) url+=(url.indexOf('?')<0?'?':'&')+'dbFps='+loadFps();
     try{ new ActiveXObject('WScript.Shell').Run('"'+AIR_EXE+'" "'+url+'"',1,false); awaitingGame=true; setMsg('The game is opening. Sign in on its own screen; every character you enter the world with shows up under Transfer.'); }
     catch(e){ setMsg('Could not start the game: '+esc(e.message),true); } }
   window.dbPlayOther=function(address){
