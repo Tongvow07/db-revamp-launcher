@@ -6,6 +6,9 @@
 ; Installs per user (no admin prompt) into %LOCALAPPDATA%\DB Revamped, with a Start Menu entry,
 ; an optional desktop shortcut and an entry in Settings > Apps for uninstalling.
 ;
+; 1.5.2 (2026-11-09): 1.5.0 and 1.5.1 could not log in anywhere: the AIR loader's new BitStream class (top-level
+;        package) replaced the game's own BitStream in the game's child ApplicationDomain, so the game never sent its
+;        first packet. The relay classes now live in package dbrevamped.relay.
 ; 1.5.1 (2026-11-09): PLAY ON MINESA did nothing (its button named a variable the page cannot see); it now
 ;        opens https://dungeonblitzr.theminesa.studio/, and a page that cannot be reached is tried over the other scheme.
 ; 1.5.0 (2026-11-09): Other Servers. PLAY ON MINESA, any server by its address (the AIR engine runs that game
@@ -82,7 +85,7 @@
 ; "DB Revamped (Classic Flash)" does the same in the Flash projector.
 
 #define AppName "DB Revamped"
-#define AppVersion "1.5.1"
+#define AppVersion "1.5.2"
 #define AppPublisher "DB Revamped"
 #define AppUrl "https://dbrevamped.com"
 ; Plain http: the game reads its http files, which an https page may not.

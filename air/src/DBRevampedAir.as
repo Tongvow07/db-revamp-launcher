@@ -27,6 +27,11 @@ package
    import flash.text.TextFormat;
    import flash.ui.Keyboard;
    import flash.utils.ByteArray;
+   // The relay lives in its own package: the loaded game shares this app's class names (it runs in a child
+   // ApplicationDomain, where ours win), and the game has its own BitStream. 1.5.0/1.5.1 had these classes in
+   // the top-level package, so the game used our BitStream and could not send its first packet.
+   import dbrevamped.relay.ServerRelay;
+   import dbrevamped.relay.SwfLoginPatch;
 
    /**
     * DB Revamped in Adobe AIR's runtime instead of the Flash Player 32 projector.
