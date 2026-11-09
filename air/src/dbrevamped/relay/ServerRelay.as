@@ -33,6 +33,8 @@ package dbrevamped.relay
       private static const POLICY:String = '<?xml version="1.0"?><!DOCTYPE cross-domain-policy SYSTEM "/xml/dtds/cross-domain-policy.dtd">' +
          '<cross-domain-policy><site-control permitted-cross-domain-policies="master-only"/>' +
          '<allow-access-from domain="*" to-ports="*"/></cross-domain-policy>\u0000';
+      /** Debug: trace every packet each way (adl only; set false for releases). */
+      private static const TRACE_PACKETS:Boolean = false;
       private static const PLAYER_DATA:int = 0x10;
       private static const ENTER_WORLD:int = 0x21;
       /** Player data packets kept per character (newest last); the server uses the newest complete one. */
@@ -43,6 +45,12 @@ package dbrevamped.relay
       private var relays:Object = {};
       /** Local port -> { host, port } of the server behind it. */
       private var targets:Object = {};
+      /**
+       * Every open game socket pair. AIR garbage-collects a Socket nothing holds on to, even while it is
+       * connected (its listeners do not count), and the connection then dies with no event: 1.5.2 lost
+       * the game connection a few seconds in, at the first collection. Pairs leave this list when they end.
+       */
+      private var live:Array = [];
       private var sockets:Array = [];
       private var connections:int = 0;
       private var kept:Object = {};
@@ -151,7 +159,20 @@ package dbrevamped.relay
          var firstChecked:Boolean = false;
          var upstreamOpen:Boolean = false;
          var closed:Boolean = false;
+         var pair:Object = { client: client, upstream: upstream };
+         live.push(pair);
+         var stats:Object = { up: 0, down: 0, last: [] };
+         stats.connection = connection;
 
+         // Every way a relayed connection ends is traced (shown by adl; a no-op in the release player).
+         var finishBy:Function = function(why:String) : Function
+         {
+            return function(... ignored) : void
+            {
+               trace("[ServerRelay] #" + connection + " " + host + ":" + port + " ended: " + why + "; bytes up " + stats.up + ", down " + stats.down + "; last packets down " + stats.last.join(" "));
+               finish();
+            };
+         };
          var finish:Function = function(... ignored) : void
          {
             if (closed)
@@ -159,6 +180,11 @@ package dbrevamped.relay
                return;
             }
             closed = true;
+            var at:int = live.indexOf(pair);
+            if (at >= 0)
+            {
+               live.splice(at, 1);
+            }
             try { if (upstream.connected) upstream.close(); } catch (e1:Error) {}
             try { if (client.connected) { client.flush(); client.close(); } } catch (e2:Error) {}
          };
@@ -192,10 +218,27 @@ package dbrevamped.relay
                   return;
                }
             }
+            stats.up += chunk.length;
+            if (TRACE_PACKETS)
+            {
+               if (!stats.upLog) stats.upLog = new ByteArray();
+               stats.upLog.position = stats.upLog.length;
+               stats.upLog.writeBytes(chunk);
+               while (stats.upLog.length >= 4)
+               {
+                  var uid:int = (stats.upLog[0] << 8) | stats.upLog[1];
+                  var ulen:int = (stats.upLog[2] << 8) | stats.upLog[3];
+                  if (stats.upLog.length < 4 + ulen) break;
+                  trace("[ServerRelay] #" + connection + " " + (new Date().time % 100000) + " UP 0x" + uid.toString(16) + "/" + ulen);
+                  var urest:ByteArray = new ByteArray();
+                  if (stats.upLog.length > 4 + ulen) urest.writeBytes(stats.upLog, 4 + ulen);
+                  stats.upLog = urest;
+               }
+            }
             toUpstream(chunk);
          });
-         client.addEventListener(Event.CLOSE, finish);
-         client.addEventListener(IOErrorEvent.IO_ERROR, finish);
+         client.addEventListener(Event.CLOSE, finishBy("the game closed it"));
+         client.addEventListener(IOErrorEvent.IO_ERROR, finishBy("game-side socket error"));
 
          upstream.addEventListener(Event.CONNECT, function(event:Event) : void
          {
@@ -210,8 +253,18 @@ package dbrevamped.relay
          upstream.addEventListener(ProgressEvent.SOCKET_DATA, function(event:ProgressEvent) : void
          {
             down.position = down.length;
+            var before:int = down.length;
             upstream.readBytes(down, down.length);
-            down = pump(down, client, connection);
+            stats.down += down.length - before;
+            try
+            {
+               down = pump(down, client, connection, stats);
+            }
+            catch (error:Error)
+            {
+               trace("[ServerRelay] #" + connection + " forwarding failed: " + error.getStackTrace());
+               finish();
+            }
          });
          // The server closes after sending the client elsewhere: what was read still reaches the client.
          upstream.addEventListener(Event.CLOSE, function(event:Event) : void
@@ -220,15 +273,15 @@ package dbrevamped.relay
             {
                client.writeBytes(down);
             }
-            finish();
+            finishBy("the server closed it")();
          });
-         upstream.addEventListener(IOErrorEvent.IO_ERROR, finish);
-         upstream.addEventListener(SecurityErrorEvent.SECURITY_ERROR, finish);
+         upstream.addEventListener(IOErrorEvent.IO_ERROR, finishBy("server-side socket error"));
+         upstream.addEventListener(SecurityErrorEvent.SECURITY_ERROR, finishBy("server-side security error"));
          upstream.connect(host, port);
       }
 
       /** Forwards every whole packet in `down` (rewriting 0x21, copying 0x10); returns what is left. */
-      private function pump(down:ByteArray, client:Socket, connection:int) : ByteArray
+      private function pump(down:ByteArray, client:Socket, connection:int, stats:Object) : ByteArray
       {
          var p:int = 0;
          var out:ByteArray = new ByteArray();
@@ -245,6 +298,10 @@ package dbrevamped.relay
             var len:int = (down[p + 2] << 8) | down[p + 3];
             if (down.length - p < 4 + len)
             {
+               if (TRACE_PACKETS)
+               {
+                  trace("[ServerRelay] #" + connection + " waiting for 0x" + id.toString(16) + "/" + len + ", have " + (down.length - p - 4));
+               }
                break;
             }
             var payload:ByteArray = new ByteArray();
@@ -264,6 +321,15 @@ package dbrevamped.relay
             else if (id == PLAYER_DATA)
             {
                keep(payload, connection);
+            }
+            stats.last.push("0x" + id.toString(16) + "/" + len);
+            if (TRACE_PACKETS)
+            {
+               trace("[ServerRelay] #" + connection + " " + (new Date().time % 100000) + " DOWN 0x" + id.toString(16) + "/" + len);
+            }
+            if (stats.last.length > 12)
+            {
+               stats.last.shift();
             }
             out.writeByte(id >> 8);
             out.writeByte(id & 0xff);

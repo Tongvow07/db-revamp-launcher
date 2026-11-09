@@ -6,6 +6,8 @@
 ; Installs per user (no admin prompt) into %LOCALAPPDATA%\DB Revamped, with a Start Menu entry,
 ; an optional desktop shortcut and an entry in Settings > Apps for uninstalling.
 ;
+; 1.5.3 (2026-11-09): playing on Minesa or another server no longer drops a few seconds in: the relay now keeps
+;        its sockets referenced (AIR garbage-collects an unreferenced connected Socket with no event).
 ; 1.5.2 (2026-11-09): 1.5.0 and 1.5.1 could not log in anywhere: the AIR loader's new BitStream class (top-level
 ;        package) replaced the game's own BitStream in the game's child ApplicationDomain, so the game never sent its
 ;        first packet. The relay classes now live in package dbrevamped.relay.
@@ -85,7 +87,7 @@
 ; "DB Revamped (Classic Flash)" does the same in the Flash projector.
 
 #define AppName "DB Revamped"
-#define AppVersion "1.5.2"
+#define AppVersion "1.5.3"
 #define AppPublisher "DB Revamped"
 #define AppUrl "https://dbrevamped.com"
 ; Plain http: the game reads its http files, which an https page may not.
