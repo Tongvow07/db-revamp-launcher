@@ -649,6 +649,11 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     note.style.cssText='position:absolute;left:0;right:0;bottom:4px;text-align:center;font:11px Arial,sans-serif;color:#d8d0c0;';
     note.innerHTML='Free, non-commercial fan project. Not affiliated with the rights holders of Dungeon Blitz.';
     document.body.appendChild(note); })();
+  /* The launcher version, bottom left, so players and staff can tell which one is running. */
+  (function(){ var ver=document.createElement("div");
+    ver.style.cssText="position:absolute;left:8px;bottom:4px;font:11px Arial,sans-serif;color:#d8d0c0;z-index:30;";
+    ver.innerHTML="Launcher v"+LAUNCHER_VERSION;
+    document.body.appendChild(ver); })();
   session=loadSession();
   dbShow(session?'signedin':'signin');
   checkServer(); window.setInterval(checkServer,3000);
