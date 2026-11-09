@@ -6,6 +6,10 @@
 ; Installs per user (no admin prompt) into %LOCALAPPDATA%\DB Revamped, with a Start Menu entry,
 ; an optional desktop shortcut and an entry in Settings > Apps for uninstalling.
 ;
+; 1.5.0 (2026-11-09): Other Servers. PLAY ON MINESA, any server by its address (the AIR engine runs that game
+;        through a relay on 127.0.0.1, air/src/ServerRelay.as, and keeps each character it enters the world with
+;        for transfer), PLAY DB ONLINE (starts DBO's own launcher). The Transfer view lists those characters and
+;        sends one as a staff-reviewed request with its status. The launcher version shows bottom left.
 ; 1.4.8 (2026-11-08): the DB Tools menu is gone, and its painted sign is taken out of the background
 ;        (dbui\title.js toolsSign). Force close game now appears in the message shown when a game will not
 ;        close. The AIR engine downloads the live game file over https (the same file), so it cannot be
