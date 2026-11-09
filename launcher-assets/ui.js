@@ -15,7 +15,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   var HEALTH=SECURE_HOST+"/api/auth/discord/config";
   /* This launcher's version (the installer's AppVersion; dbui\build.js --verify checks they match) and
      where the newest one is announced. */
-  var LAUNCHER_VERSION="1.5.0";
+  var LAUNCHER_VERSION="1.5.1";
   var LATEST=SECURE_HOST+"/download/launcher.json";
   var SETUP_URL=SECURE_HOST+"/download/DB-Revamped-Setup.exe";
   var API_CREATE=SECURE_HOST+"/api/account/create";
@@ -189,7 +189,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
        launcher, so that button starts it (or opens its website to get it). */
     '<div class="view" id="view-servers">',
     '<div class="msg dbui-msg" id="msg-servers" style="margin-top:0"></div>',
-    button('PLAY ON MINESA','dbPlayOther(MINESA_URL)','','minesaBtn'),
+    button('PLAY ON MINESA','dbPlayMinesa()','','minesaBtn'),
     button('PLAY DB ONLINE','dbPlayOnline()','','onlineBtn'),
     '<label class="dbui-label" for="otherUrl">OR ANOTHER SERVER ADDRESS</label>'+field('otherUrl','text',' maxlength="300"'),
     button('PLAY ON THIS SERVER','dbPlayOtherTyped()','copper','otherBtn'),
@@ -511,7 +511,8 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
 
   /* Playing on another server: the page's DungeonBlitz.swf (found the way Arc Launcher finds it) opens in
      the AIR engine, which runs it through its relay. The address typed last is remembered. */
-  var MINESA_URL='http://dungeonblitzr.theminesa.studio/';
+  /* 1.5.1: https (the owner's address for it); dbPlayOther falls back to http when https cannot be reached. */
+  var MINESA_URL='https://dungeonblitzr.theminesa.studio/';
   var OTHER_FILE=SESSION_DIR?SESSION_DIR+'\\other-server.txt':null;
   function loadOtherUrl(){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(OTHER_FILE&&fso.FileExists(OTHER_FILE)){ var ts=fso.OpenTextFile(OTHER_FILE,1,false); var v=ts.ReadAll().replace(/\s+$/,''); ts.Close(); return v; } }catch(e){} return ''; }
   function saveOtherUrl(v){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!fso.FolderExists(SESSION_DIR)) fso.CreateFolder(SESSION_DIR); var ts=fso.CreateTextFile(OTHER_FILE,true); ts.Write(v); ts.Close(); }catch(e){} }
@@ -532,12 +533,26 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     if(page!=MINESA_URL) saveOtherUrl(page);
     if(/\.swf(\?|$)/i.test(page)){ startOther(page); return; }
     setBusy(true); setMsg('Finding the game on '+esc(serverLabel(page))+'...');
+    /* The page as given first, then the same address over the other scheme (https <-> http) when the
+       first cannot be reached at all; a page that answers is never retried. */
+    var pages=[page, /^https:/i.test(page)?page.replace(/^https:/i,'http:'):page.replace(/^http:/i,'https:')];
     var done=false, finish=function(swf,err){ if(done) return; done=true; setBusy(false); if(swf) startOther(swf); else setMsg(err,true); };
-    try{ var x=quick(newXhr()); x.open('GET',page,true);
-      x.onreadystatechange=function(){ if(x.readyState!=4) return; if(x.status!=200){ finish(null,'That server did not answer (status '+x.status+'). Check the address, or try again later.'); return; }
-        var swf=findSwf(String(x.responseText||''),page); finish(swf,'That page has no Dungeon Blitz game on it. Enter the game page, or the address of its DungeonBlitz.swf.'); };
-      x.send(); window.setTimeout(function(){ try{ x.abort(); }catch(e){} finish(null,'Could not reach '+esc(serverLabel(page))+'. It may be down; try again later.'); },15000);
-    }catch(e){ finish(null,'Could not reach that server: '+esc(e.message)); } };
+    var unreachable='Could not reach '+esc(serverLabel(page))+'. It may be down, or not answering your connection; try again later.';
+    var tryPage=function(i){
+      if(i>=pages.length){ finish(null,unreachable); return; }
+      var settled=false, next=function(){ if(settled) return; settled=true; tryPage(i+1); };
+      try{ var x=quick(newXhr()); x.open('GET',pages[i],true);
+        x.onreadystatechange=function(){ if(x.readyState!=4||settled) return;
+          /* A connection that failed has no status (reading it can throw) or a WinHTTP error code (12xxx). */
+          var st=0; try{ st=x.status; }catch(e){ st=0; }
+          if(st==0||st>=12000){ next(); return; }
+          settled=true;
+          if(st!=200){ finish(null,esc(serverLabel(page))+' did not answer with its game page (status '+st+'). Check the address, or try again later.'); return; }
+          var swf=findSwf(String(x.responseText||''),pages[i]); finish(swf,'That page has no Dungeon Blitz game on it. Enter the game page, or the address of its DungeonBlitz.swf.'); };
+        x.send(); window.setTimeout(function(){ if(settled) return; try{ x.abort(); }catch(e){} next(); },10000);
+      }catch(e){ next(); } };
+    tryPage(0); };
+  window.dbPlayMinesa=function(){ dbPlayOther(MINESA_URL); };
   window.dbPlayOtherTyped=function(){ dbPlayOther($('otherUrl').value); };
   /* DB Online signs players in through its own launcher (a device check of theirs), so the button starts
      that launcher where its installer puts it, or opens dungeonblitz.online to get it. */
