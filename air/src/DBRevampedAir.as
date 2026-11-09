@@ -26,6 +26,7 @@ package
    import flash.text.TextFieldAutoSize;
    import flash.text.TextFormat;
    import flash.ui.Keyboard;
+   import flash.utils.ByteArray;
 
    /**
     * DB Revamped in Adobe AIR's runtime instead of the Flash Player 32 projector.
@@ -49,6 +50,9 @@ package
       private var windowWidth:int = 0;
       private var windowHeight:int = 0;
       private var toggleHeld:Boolean = false;
+      /** Playing on a server other than DB Revamped (isOtherServer): the game goes through ServerRelay. */
+      private var otherServer:Boolean = false;
+      private var relay:ServerRelay;
 
       public function DBRevampedAir()
       {
@@ -90,8 +94,9 @@ package
             page = LIVE_GAME;
          }
          started = true;
+         otherServer = isOtherServer(page);
          screenStart(flashvars(page));
-         status.text = "Loading DB Revamped...";
+         status.text = otherServer ? "Loading the game from " + originOf(page) + "..." : "Loading DB Revamped...";
          var download:URLLoader = new URLLoader();
          download.dataFormat = URLLoaderDataFormat.BINARY;
          download.addEventListener(Event.COMPLETE, onDownloaded);
@@ -240,13 +245,75 @@ package
       {
          var context:LoaderContext = new LoaderContext(false, new ApplicationDomain(ApplicationDomain.currentDomain));
          context.allowCodeImport = true;
-         context.parameters = flashvars(page);
+         var vars:Object = flashvars(page);
+         var game:ByteArray = URLLoader(event.target).data;
+         if (otherServer)
+         {
+            // The SWF reads its web address from `origin`: it runs from this app, not from its server.
+            vars.origin = originOf(page);
+            game = throughRelay(game);
+         }
+         context.parameters = vars;
          var loader:Loader = new Loader();
          // Flash Player's release build shows nothing for an error the game leaves uncaught.
          loader.uncaughtErrorEvents.addEventListener(UncaughtErrorEvent.UNCAUGHT_ERROR, onUncaught);
          removeChild(status);
          addChild(loader);
-         loader.loadBytes(URLLoader(event.target).data, context);
+         loader.loadBytes(game, context);
+      }
+
+      /**
+       * Another server's game, logging in through ServerRelay so the launcher can offer its characters
+       * for transfer. If its login address cannot be found, the game runs as it came (no transfer list).
+       */
+      private function throughRelay(game:ByteArray) : ByteArray
+      {
+         try
+         {
+            relay = new ServerRelay(originOf(page));
+            var port:int = relay.reserve();
+            var patcher:SwfLoginPatch = new SwfLoginPatch();
+            var patched:ByteArray = patcher.patch(game, "127.0.0.1", port);
+            if (patched)
+            {
+               relay.assign(port, patcher.originalHost, patcher.originalPort);
+               trace("[DBRevampedAir] login " + patcher.originalHost + ":" + patcher.originalPort + " through 127.0.0.1:" + port);
+               return patched;
+            }
+            trace("[DBRevampedAir] login address not found (host " + patcher.hostPatches + ", port " + patcher.portPatches + "): no relay");
+            relay.close();
+         }
+         catch (error:Error)
+         {
+            trace("[DBRevampedAir] relay: " + error.message);
+            if (relay)
+            {
+               relay.close();
+            }
+         }
+         relay = null;
+         game.position = 0;
+         return game;
+      }
+
+      /**
+       * True for any server but DB Revamped (our own game connects straight to us). dbRelay=1 forces the
+       * relay, to test it against a local server.
+       */
+      private static function isOtherServer(url:String) : Boolean
+      {
+         if (/[?&]dbRelay=1(&|#|$)/.test(url))
+         {
+            return true;
+         }
+         var host:Array = /^https?:\/\/([^\/:?#]+)/i.exec(url);
+         return !host || !/^((www\.)?dbrevamped\.com|dungeonblitzv\.duckdns\.org|localhost|127\.0\.0\.1)$/i.test(host[1]);
+      }
+
+      private static function originOf(url:String) : String
+      {
+         var m:Array = /^(https?:\/\/[^\/?#]+)/i.exec(url);
+         return m ? m[1] : "";
       }
 
       private function onUncaught(event:UncaughtErrorEvent) : void

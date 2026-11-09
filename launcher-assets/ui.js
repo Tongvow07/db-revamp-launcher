@@ -15,7 +15,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   var HEALTH=SECURE_HOST+"/api/auth/discord/config";
   /* This launcher's version (the installer's AppVersion; dbui\build.js --verify checks they match) and
      where the newest one is announced. */
-  var LAUNCHER_VERSION="1.4.8";
+  var LAUNCHER_VERSION="1.5.0";
   var LATEST=SECURE_HOST+"/download/launcher.json";
   var SETUP_URL=SECURE_HOST+"/download/DB-Revamped-Setup.exe";
   var API_CREATE=SECURE_HOST+"/api/account/create";
@@ -87,6 +87,13 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     ".fps-opt{float:left;width:31.33%;margin:0}",
     ".fps-opt+.fps-opt{margin-left:3%}",
     ".transfer-btn{margin-top:.55em}",
+    /* 1.5.0: other servers (Minesa, DB Online, any address) and the characters captured there for transfer. */
+    ".other-btn{margin-top:.4em}",
+    ".capture-list{max-height:7.2em;overflow-y:auto;margin:.15em 0 .2em}",
+    ".capture-row{display:block;width:100%;margin:.15em 0 0}",
+    ".capture-row .dbui-btn-text{font-size:.66em;line-height:1.35em;padding:.35em .4em;white-space:normal}",
+    ".capture-none{text-align:center;font-size:.7em;line-height:1.3em;margin:.2em 0}",
+    ".or-file{margin-top:.35em}",
     ".update{margin-bottom:.45em}",
     /* While a request runs the buttons wait; the AIR choice greys out when AIR is not installed. */
     ".panel .dbui-btn[disabled]{cursor:wait}",
@@ -116,6 +123,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     button('SIGN IN','dbSignIn()','','signinBtn'),
     button('CREATE AN ACCOUNT','dbShow(\'register\')','copper'),
     '<span class="dblink dbui-link" onclick="dbForgot()">Forgot your password?</span>',
+    button('PLAY ON MINESA OR ANOTHER SERVER','dbShow(\'servers\')','slate','','other-btn'),
     '<div class="msg dbui-msg" id="msg-signin"></div>',
     '</form>',
     /* Register */
@@ -158,20 +166,36 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     '</div>',
     '<div class="engine-hint dbui-dim" id="engineHint"></div>',
     '</div>',
-    button('Played on another Dungeon Blitz server? Upload your save file here and we move your characters to your account.','dbShow(\'transfer\')','slate','','dbui-btn-multi transfer-btn'),
+    button('PLAY ON MINESA OR ANOTHER SERVER','dbShow(\'servers\')','slate','','other-btn'),
+    button('Played on Minesa or another server? Transfer your characters to this account.','dbShow(\'transfer\')','slate','','dbui-btn-multi transfer-btn'),
     '</div>',
     /* Transfer: send a save file for the staff to review. Three kinds are accepted (the server
        normalizes all three): the account export, the character save and the packets capture. */
     '<div class="view" id="view-transfer">',
-    '<div class="note dbui-notice">Choose one of your save files and the name you want: the <b>account export</b> (<i>name</i>.accountsave.json), the <b>character save</b> (<i>name</i>save.json) or the <b>packets capture</b> (packets.json). The staff review every request.</div>',
     '<div class="msg dbui-msg" id="msg-transfer" style="margin-top:0"></div>',
+    '<label class="dbui-label first">YOUR CHARACTERS FROM OTHER SERVERS</label>',
+    '<div class="capture-list" id="captureList"></div>',
+    '<label class="dbui-label or-file">OR A SAVE FILE (.accountsave.json, save.json, packets.json)</label>',
     '<input class="file-input" id="transferFile" type="file" accept=".json,application/json" onchange="dbTransferPicked()">',
     button('CHOOSE FILE','dbTransferChoose()','copper'),
-    '<span class="file-hint dbui-dim">A .json file: <i>name</i>.accountsave.json, <i>name</i>save.json or packets.json (up to 2 MB)</span>',
     '<span class="file-name" id="transferName">No file chosen</span>',
     '<label class="dbui-label" for="transferCharName">CHARACTER NAME</label>'+field('transferCharName','text',' maxlength="16"'),
     button('SEND REQUEST','dbTransferSend()','','transferBtn'),
     button('BACK','dbShow(\'signedin\')','copper'),
+    '</div>',
+    /* Other servers. Minesa or any address: the game runs in the AIR engine through a relay on this PC
+       (air/src/ServerRelay.as), which keeps each character's save so it can be sent here for transfer;
+       nothing is sent anywhere until the player sends it. DB Online signs in only through its own
+       launcher, so that button starts it (or opens its website to get it). */
+    '<div class="view" id="view-servers">',
+    '<div class="msg dbui-msg" id="msg-servers" style="margin-top:0"></div>',
+    button('PLAY ON MINESA','dbPlayOther(MINESA_URL)','','minesaBtn'),
+    button('PLAY DB ONLINE','dbPlayOnline()','','onlineBtn'),
+    '<label class="dbui-label" for="otherUrl">OR ANOTHER SERVER ADDRESS</label>'+field('otherUrl','text',' maxlength="300"'),
+    button('PLAY ON THIS SERVER','dbPlayOtherTyped()','copper','otherBtn'),
+    '<div class="engine-hint dbui-dim">On Minesa or another address, sign in on the game screen and enter the world: each character you play is kept on this PC, ready to transfer to DB Revamped.</div>',
+    button('TRANSFER TO DB REVAMPED','dbShow(\'transfer\')','slate','','transfer-btn'),
+    button('BACK','dbBack()','copper'),
     '</div>',
     '</div>',
     '</div>',
@@ -202,22 +226,24 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   /* The HTA resizes its window just above; when that lands after the first fit, fit again. */
   window.setTimeout(fitPanel,300);
 
-  var TITLES={signin:'Sign In',register:'Create Your Account',signedin:'Welcome Back',transfer:'Transfer a Character'};
+  var TITLES={signin:'Sign In',register:'Create Your Account',signedin:'Welcome Back',transfer:'Transfer a Character',servers:'Other Servers'};
   function setMsg(t,isError){ var m=$('msg-'+view); if(m){ m.className=isError?'msg dbui-msg dbui-msg-error':'msg dbui-msg'; m.innerHTML=t||''; } fitPanel(); }
   window.dbShow=function(name){
     view=name;
-    var names=['signin','register','signedin','transfer'];
+    var names=['signin','register','signedin','transfer','servers'];
     for(var i=0;i<names.length;i++){ var v=$('view-'+names[i]); if(v) v.className=(names[i]==name)?'view active':'view'; }
     $('panelTitle').innerHTML=TITLES[name];
     setMsg('');
     if(name=='signedin'&&session){ $('whoEmail').innerHTML=esc(session.email); showEngine(); }
+    if(name=='transfer'){ showCaptures(); }
+    if(name=='servers'){ try{ if(!$('otherUrl').value) $('otherUrl').value=loadOtherUrl(); }catch(e){} }
     fitPanel();
     try{ if(name=='signin') $(($('signinEmail').value?'signinPassword':'signinEmail')).focus();
          else if(name=='register') $('regEmail').focus(); }catch(e){}
   };
   function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function jesc(s){ return String(s).replace(/\\/g,'\\\\').replace(/"/g,'\\"'); }
-  function setBusy(on){ busy=on; var ids=['signinBtn','registerBtn','playBtn','transferBtn']; for(var i=0;i<ids.length;i++){ var b=$(ids[i]); if(b) b.disabled=on; } }
+  function setBusy(on){ busy=on; var ids=['signinBtn','registerBtn','playBtn','transferBtn','minesaBtn','onlineBtn','otherBtn']; for(var i=0;i<ids.length;i++){ var b=$(ids[i]); if(b) b.disabled=on; } }
 
   function setServer(up){ serverUp=up; var d=$('statusDot'), s=$('statusText');
     if(d){ d.className=up?'dbui-dot dbui-on':'dbui-dot'; }
@@ -417,33 +443,111 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     return {text:text,kind:kind};
   }
   window.dbTransferPicked=function(){ var p=transferPath(), name=p?p.replace(/^.*[\\\/]/,''):'';
+    if(p){ pickedCapture=null; markCaptures(); }
     if(!p){ $('transferName').innerHTML='No file chosen'; setMsg(''); return; }
     try{ var found=inspectExport(p); $('transferName').innerHTML=esc(name)+' - <b>'+found.kind+'</b>'; setMsg('Found your '+found.kind+'. Enter the name you want and send the request.'); }
     catch(e){ $('transferName').innerHTML=esc(name); setMsg(e.message,true); } };
   /* The page runs in IE11 mode (X-UA-Compatible IE=edge), which has JSON. */
   function jsonString(s){ return JSON.stringify(s); }
   window.dbTransferSend=function(){
-    if(busy||!session) return;
-    var path=transferPath();
-    if(!path){ setMsg('Choose your save file first: '+TRANSFER_KINDS+'.',true); return; }
+    if(busy) return;
+    if(!session){ dbShow('signin'); setMsg('Sign in to your DB Revamped account first: the character is transferred to it.',true); return; }
+    var path=pickedCapture?pickedCapture.path:transferPath();
+    if(!path){ setMsg('Pick one of your characters, or choose a save file: '+TRANSFER_KINDS+'.',true); return; }
     var wanted=String($('transferCharName').value||'').replace(/^\s+|\s+$/g,'');
     if(!/^[A-Za-z][A-Za-z0-9]{2,15}$/.test(wanted)){ setMsg('Enter the name you want: 3-16 letters or digits, starting with a letter.',true); try{ $('transferCharName').focus(); }catch(e){} return; }
     var found;
     try{ found=inspectExport(path); }catch(e){ setMsg(e.message,true); return; }
     setBusy(true); setMsg('Sending your '+found.kind+'...');
-    var name=path.replace(/^.*[\\\/]/,'');
+    var name=pickedCapture?pickedCapture.name+'.packets.json':path.replace(/^.*[\\\/]/,'');
     var body='{"token":'+jsonString(session.token)+',"fileName":'+jsonString(name)+',"desiredName":'+jsonString(wanted)+',"exportText":'+jsonString(found.text)+'}';
     post(API_TRANSFER,body,function(status,r){
       setBusy(false);
       if(status==200&&r.ok){
         setMsg('Sent! '+esc(wanted)+' will be added after the staff review it.');
         try{ $('transferFile').value=''; }catch(e){} $('transferName').innerHTML='No file chosen'; $('transferCharName').value='';
+        pickedCapture=null; refreshTransferStatus();
         return;
       }
       if(status==401){ var email=session.email; session=null; clearSession(); $('signinEmail').value=email; dbShow('signin'); setMsg((r&&r.error)||'Please sign in again.',true); return; }
       setMsg(netError(status,r,'Could not send the request.'),true);
     });
   };
+
+  /* 1.5.0: characters captured by the AIR engine while playing on another server (air/src/ServerRelay.as
+     writes transfers\<server>\<name>.json in its storage folder: a dungeon-blitz-player-capture/1 file the
+     server decodes). Newest first; picking one fills in its name. Where a request for that name stands
+     (waiting, transferred, not accepted) comes from the server, for the signed-in account only. */
+  var CAPTURE_DIR=null; try{ CAPTURE_DIR=new ActiveXObject('WScript.Shell').ExpandEnvironmentStrings('%APPDATA%')+'\\org.dbrevamped.game\\Local Store\\transfers'; }catch(e){}
+  var API_TRANSFER_STATUS=SECURE_HOST+"/api/launcher/transfer-requests";
+  var captures=[], pickedCapture=null, requestStatus={};
+  function serverLabel(origin){ var h=String(origin||'').replace(/^https?:\/\//i,'').replace(/[\/:?#].*$/,''); return /theminesa/i.test(h)?'Minesa':(h||'another server'); }
+  function findCaptures(){ var out=[]; try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!CAPTURE_DIR||!fso.FolderExists(CAPTURE_DIR)) return out;
+      for(var d=new Enumerator(fso.GetFolder(CAPTURE_DIR).SubFolders);!d.atEnd();d.moveNext()){ for(var f=new Enumerator(d.item().Files);!f.atEnd();f.moveNext()){ var file=f.item();
+        if(!/\.json$/i.test(file.Name)||file.Size>TRANSFER_MAX_BYTES) continue;
+        try{ var o=JSON.parse(readExport(file.Path).replace(/^\uFEFF/,'')); var nm=o&&o.character&&o.character.name;
+          if(o.format!='dungeon-blitz-player-capture/1'||!nm) continue;
+          out.push({path:file.Path,name:String(nm),server:serverLabel(o.source&&o.source.origin),when:new Date(file.DateLastModified)}); }catch(e){} } } }catch(e){}
+    out.sort(function(a,b){ return b.when-a.when; }); return out; }
+  function shortDate(d){ try{ var m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return d.getDate()+' '+m[d.getMonth()]; }catch(e){ return ''; } }
+  function statusText(name){ var r=requestStatus[String(name).toLowerCase()]; if(!r) return '';
+    if(r.status=='approved') return ' - <b>transferred'+(r.importedAs?' as '+esc(r.importedAs):'')+'</b>';
+    if(r.status=='rejected') return ' - <b>not accepted</b>'; return ' - <b>waiting for review</b>'; }
+  function markCaptures(){ for(var i=0;i<captures.length;i++){ var b=$('capture'+i); if(!b) continue;
+      b.className='dbui-btn dbui-btn-small capture-row'+(pickedCapture&&pickedCapture.path==captures[i].path?' dbui-on':' dbui-btn-slate');
+      b.getElementsByTagName('span')[1].innerHTML=esc(captures[i].name)+' &middot; '+esc(captures[i].server)+' &middot; '+shortDate(captures[i].when)+statusText(captures[i].name); } }
+  function showCaptures(){ captures=findCaptures(); var box=$('captureList'); if(!box) return; var h=[];
+    for(var i=0;i<captures.length;i++) h.push(button('','dbPickCapture('+i+')','slate','capture'+i,'dbui-btn-small capture-row'));
+    box.innerHTML=h.length?h.join(''):'<div class="capture-none dbui-dim">None yet. Play on Minesa or another server from this launcher and enter the world with a character: it shows up here.</div>';
+    if(pickedCapture){ var still=null; for(var j=0;j<captures.length;j++) if(captures[j].path==pickedCapture.path) still=captures[j]; pickedCapture=still; }
+    markCaptures(); refreshTransferStatus(); fitPanel(); }
+  window.dbPickCapture=function(i){ var c=captures[i]; if(!c) return; pickedCapture=c; try{ $('transferFile').value=''; }catch(e){} $('transferName').innerHTML='No file chosen';
+    if(!$('transferCharName').value) $('transferCharName').value=c.name;
+    markCaptures(); setMsg(esc(c.name)+' from '+esc(c.server)+'. Check the name you want here and send the request.'); };
+  function refreshTransferStatus(){ if(!session) return; post(API_TRANSFER_STATUS,'{"token":'+jsonString(session.token)+'}',function(status,r){
+      if(status!=200||!r||!r.requests) return; requestStatus={};
+      for(var i=r.requests.length-1;i>=0;i--){ var q=r.requests[i]; if(q&&q.desiredName) requestStatus[String(q.desiredName).toLowerCase()]=q; }
+      markCaptures(); }); }
+
+  /* Playing on another server: the page's DungeonBlitz.swf (found the way Arc Launcher finds it) opens in
+     the AIR engine, which runs it through its relay. The address typed last is remembered. */
+  var MINESA_URL='http://dungeonblitzr.theminesa.studio/';
+  var OTHER_FILE=SESSION_DIR?SESSION_DIR+'\\other-server.txt':null;
+  function loadOtherUrl(){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(OTHER_FILE&&fso.FileExists(OTHER_FILE)){ var ts=fso.OpenTextFile(OTHER_FILE,1,false); var v=ts.ReadAll().replace(/\s+$/,''); ts.Close(); return v; } }catch(e){} return ''; }
+  function saveOtherUrl(v){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!fso.FolderExists(SESSION_DIR)) fso.CreateFolder(SESSION_DIR); var ts=fso.CreateTextFile(OTHER_FILE,true); ts.Write(v); ts.Close(); }catch(e){} }
+  function normalizeUrl(v){ var t=String(v||'').replace(/^\s+|\s+$/g,''); if(!t) return null; if(!/^[a-z][a-z0-9+.\-]*:\/\//i.test(t)) t='http://'+t;
+    if(!/^https?:\/\/[^\/\s@]+/i.test(t)) return null; return t.replace(/#.*$/,''); }
+  function absoluteUrl(ref,base){ if(/^https?:\/\//i.test(ref)) return ref; var origin=(/^(https?:\/\/[^\/?#]+)/i.exec(base)||[])[1]||'';
+    if(/^\/\//.test(ref)) return base.replace(/:.*$/,'')+':'+ref; if(ref.charAt(0)=='/') return origin+ref;
+    return base.replace(/[?#].*$/,'').replace(/[^\/]*$/,'')+ref; }
+  function findSwf(html,base){ var m=/(?:const|let|var)\s+swfUrl\s*=\s*[\x60'"]([^\x60'"]*DungeonBlitz\.swf[^\x60'"]*)[\x60'"]/i.exec(html)||/(?:data|src|movie)\s*[=:]\s*['"]([^'"]*DungeonBlitz\.swf[^'"]*)['"]/i.exec(html);
+    if(!m) return null; var raw=m[1].replace(/\$\{languageParam\}/g,'').replace(/&amp;/g,'&'); if(/\$\{/.test(raw)) return null; return absoluteUrl(raw,base); }
+  function startOther(swfUrl){ var url=swfUrl; if(loadScreen()!='full') url+=(url.indexOf('?')<0?'?':'&')+'dbScreen='+loadScreen();
+    try{ new ActiveXObject('WScript.Shell').Run('"'+AIR_EXE+'" "'+url+'"',1,false); awaitingGame=true; setMsg('The game is opening. Sign in on its own screen; every character you enter the world with shows up under Transfer.'); }
+    catch(e){ setMsg('Could not start the game: '+esc(e.message),true); } }
+  window.dbPlayOther=function(address){
+    if(busy) return; var page=normalizeUrl(address);
+    if(!page){ setMsg('Enter the server address, for example its game page.',true); return; }
+    if(!hasAir()){ setMsg('Playing on another server needs the AIR engine. Run the DB Revamped installer again to add it.',true); return; }
+    if(page!=MINESA_URL) saveOtherUrl(page);
+    if(/\.swf(\?|$)/i.test(page)){ startOther(page); return; }
+    setBusy(true); setMsg('Finding the game on '+esc(serverLabel(page))+'...');
+    var done=false, finish=function(swf,err){ if(done) return; done=true; setBusy(false); if(swf) startOther(swf); else setMsg(err,true); };
+    try{ var x=quick(newXhr()); x.open('GET',page,true);
+      x.onreadystatechange=function(){ if(x.readyState!=4) return; if(x.status!=200){ finish(null,'That server did not answer (status '+x.status+'). Check the address, or try again later.'); return; }
+        var swf=findSwf(String(x.responseText||''),page); finish(swf,'That page has no Dungeon Blitz game on it. Enter the game page, or the address of its DungeonBlitz.swf.'); };
+      x.send(); window.setTimeout(function(){ try{ x.abort(); }catch(e){} finish(null,'Could not reach '+esc(serverLabel(page))+'. It may be down; try again later.'); },15000);
+    }catch(e){ finish(null,'Could not reach that server: '+esc(e.message)); } };
+  window.dbPlayOtherTyped=function(){ dbPlayOther($('otherUrl').value); };
+  /* DB Online signs players in through its own launcher (a device check of theirs), so the button starts
+     that launcher where its installer puts it, or opens dungeonblitz.online to get it. */
+  var ONLINE_EXE=null; try{ ONLINE_EXE=new ActiveXObject('WScript.Shell').ExpandEnvironmentStrings('%LOCALAPPDATA%')+'\\Programs\\Dungeon Blitz\\DungeonBlitz.exe'; }catch(e){}
+  window.dbPlayOnline=function(){ var sh; try{ sh=new ActiveXObject('WScript.Shell'); }catch(e){ setMsg('Open https://dungeonblitz.online/ in your browser.',true); return; }
+    var have=false; try{ have=!!ONLINE_EXE&&new ActiveXObject('Scripting.FileSystemObject').FileExists(ONLINE_EXE); }catch(e){}
+    try{ if(have){ sh.Run('"'+ONLINE_EXE+'"',1,false); setMsg('DB Online\'s launcher is opening.'); }
+      else { sh.Run('https://dungeonblitz.online/',1,false); setMsg('DB Online is played through its own launcher: its website is open in your browser to download it. Then press PLAY DB ONLINE again.'); } }
+    catch(e){ setMsg('Could not open DB Online: '+esc(e.message),true); } };
+  window.dbBack=function(){ dbShow(session?'signedin':'signin'); };
 
   window.dbSignOut=function(){
     if(busy) return;
@@ -457,7 +561,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
 
   /* Enter submits whatever view is showing. */
   document.onkeydown=function(e){ var ev=e||window.event; if(ev.keyCode!=13) return;
-    if(view=='signin') dbSignIn(); else if(view=='register') dbRegister(); else if(view=='signedin') dbPlay(); };
+    if(view=='signin') dbSignIn(); else if(view=='register') dbRegister(); else if(view=='signedin') dbPlay(); else if(view=='servers') dbPlayOtherTyped(); };
 
   /* Refresh on the game's "server is down" box (GameReload in the game) closes the game and leaves
      a relaunch flag: AIR writes %APPDATA%\DBRevamped\relaunch.flag, the Flash projector its shared
