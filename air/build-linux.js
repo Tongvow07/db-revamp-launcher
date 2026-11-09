@@ -10,21 +10,36 @@
 // Started without a game URL, the app opens the live game (src\DBRevampedAir.as LIVE_GAME), which
 // signs in on its own login screen, as on the Mac.
 //
-//   node air\build-linux.js      (after node air\build.js)
+// The app's signed files come from a Windows bundle made here in a scratch folder, as build-mac.js
+// does, at the Windows launcher's version (installer\DBRevamped.iss AppVersion; DB_APP_VERSION
+// overrides it, see app-version.js). air\bundle, the Windows installer's copy, is left as it is.
+//
+//   node air\build-linux.js
 'use strict';
 const fs = require('fs');
 const path = require('path');
 const zlib = require('zlib');
+const { execFileSync } = require('child_process');
 
 const HERE = __dirname;
 const REPO = path.dirname(HERE);
 const SDK = process.env.AIR_SDK_HOME || 'C:\\DungeonBlitzLab\\airsdk\\AIRSDK_51.4.1';
+const CERT_DIR = process.env.AIR_CERT_DIR || 'C:\\DungeonBlitzLab\\air-cert';
+const CERT = path.join(CERT_DIR, 'dbrevamped.p12');
+const PASS_FILE = path.join(CERT_DIR, 'storepass.txt');
 const RUNTIME = path.join(SDK, 'runtimes', 'air', 'linux', 'Adobe AIR');
 const ENTRY = path.join(RUNTIME, 'Versions', '1.0', 'Resources', 'captiveappentry');
-const BUNDLE = path.join(HERE, 'bundle');
 const APP = 'DB Revamped';
-const VERSION = fs.readFileSync(path.join(HERE, 'DBRevampedAir-app.xml'), 'utf8').match(/<versionNumber>([^<]+)</)[1];
+const { VERSION, writeAppXml } = require('./app-version');
 const TOP = 'DB Revamped';
+
+function bat(name, args) {
+    const quoted = args.map((arg) => (/[\s&()^|<>]/.test(arg) ? `"${arg}"` : arg));
+    execFileSync('cmd.exe', ['/d', '/s', '/c', `"${path.join(SDK, 'bin', name)}" ${quoted.join(' ')}`], {
+        stdio: 'inherit',
+        windowsVerbatimArguments: true
+    });
+}
 
 const INSTALL_SCRIPT = `#!/bin/sh
 # Installs DB Revamped for this user: copies the game to ~/.local/share and adds it to the app menu.
@@ -126,9 +141,24 @@ function addTree(source, target, skip = () => false) {
     }
 }
 
-if (!fs.existsSync(path.join(BUNDLE, 'DBRevampedAir.swf'))) {
-    throw new Error('Run node air\\build.js first: the signed app files come from air\\bundle.');
+// The app's SWF and its signed files, by way of a Windows bundle in a scratch folder.
+if (!fs.existsSync(CERT)) {
+    throw new Error(`No signing certificate at ${CERT}; run node air\\build.js once first.`);
 }
+const work = path.join(HERE, 'build-linux');
+fs.rmSync(work, { recursive: true, force: true });
+const swfDir = path.join(work, 'swf');
+fs.mkdirSync(swfDir, { recursive: true });
+bat('amxmlc.bat', ['-output', path.join(swfDir, 'DBRevampedAir.swf'), path.join(HERE, 'src', 'DBRevampedAir.as')]);
+const BUNDLE = path.join(work, 'win-bundle');
+bat('adt.bat', [
+    '-package', '-storetype', 'pkcs12', '-keystore', CERT,
+    '-storepass', fs.readFileSync(PASS_FILE, 'utf8').trim(),
+    '-target', 'bundle', BUNDLE, writeAppXml(work),
+    '-C', swfDir, 'DBRevampedAir.swf',
+    '-C', HERE, 'icons'
+]);
+
 add(APP, fs.readFileSync(ENTRY), 0o755);
 addTree(RUNTIME, 'Adobe AIR/');
 addTree(BUNDLE, '', (name) => name === 'Adobe AIR' || name === `${APP}.exe`);
@@ -147,4 +177,5 @@ blocks.push(Buffer.alloc(1024));
 const out = path.join(REPO, 'dist', `${APP} for Linux ${VERSION}.tar.gz`);
 fs.mkdirSync(path.dirname(out), { recursive: true });
 fs.writeFileSync(out, zlib.gzipSync(Buffer.concat(blocks), { level: 9 }));
+fs.rmSync(work, { recursive: true, force: true });
 console.log(`Linux download built: ${out} (${(fs.statSync(out).size / 1048576).toFixed(1)} MB, ${entries.length} files)`);

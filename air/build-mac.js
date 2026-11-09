@@ -15,6 +15,11 @@
 // Started without a game URL, the app opens the live game (src\DBRevampedAir.as LIVE_GAME), which
 // signs in on its own login screen.
 //
+// The version is the Windows launcher's (installer\DBRevamped.iss AppVersion; DB_APP_VERSION overrides
+// it, see app-version.js), written into a copy of the app descriptor in the scratch folder, so the
+// signed application.xml carries it. DBRevampedAir-app.xml and air\bundle (the Windows installer's
+// copy of the app) are left as they are.
+//
 //   node air\build-mac.js
 'use strict';
 const fs = require('fs');
@@ -39,8 +44,7 @@ function bat(name, args) {
     });
 }
 
-const appXml = fs.readFileSync(path.join(HERE, 'DBRevampedAir-app.xml'), 'utf8');
-const VERSION = (appXml.match(/<versionNumber>([^<]+)<\/versionNumber>/) || [])[1] || '1.0.0';
+const { VERSION, writeAppXml } = require('./app-version');
 
 // 1. The app's SWF and its signed files, by way of a Windows bundle in a scratch folder.
 if (!fs.existsSync(CERT)) {
@@ -49,14 +53,15 @@ if (!fs.existsSync(CERT)) {
 const work = path.join(HERE, 'build-mac');
 fs.rmSync(work, { recursive: true, force: true });
 fs.mkdirSync(work, { recursive: true });
-fs.mkdirSync(path.join(HERE, 'build'), { recursive: true });
-bat('amxmlc.bat', ['-output', path.join(HERE, 'build', 'DBRevampedAir.swf'), path.join(HERE, 'src', 'DBRevampedAir.as')]);
+const swfDir = path.join(work, 'swf');
+fs.mkdirSync(swfDir, { recursive: true });
+bat('amxmlc.bat', ['-output', path.join(swfDir, 'DBRevampedAir.swf'), path.join(HERE, 'src', 'DBRevampedAir.as')]);
 const winBundle = path.join(work, 'win-bundle');
 bat('adt.bat', [
     '-package', '-storetype', 'pkcs12', '-keystore', CERT,
     '-storepass', fs.readFileSync(PASS_FILE, 'utf8').trim(),
-    '-target', 'bundle', winBundle, path.join(HERE, 'DBRevampedAir-app.xml'),
-    '-C', path.join(HERE, 'build'), 'DBRevampedAir.swf',
+    '-target', 'bundle', winBundle, writeAppXml(work),
+    '-C', swfDir, 'DBRevampedAir.swf',
     '-C', HERE, 'icons'
 ]);
 

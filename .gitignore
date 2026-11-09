@@ -2,3 +2,5 @@ dist/
 air/build/
 air/bundle/
 installer/DB Revamped Launcher.exe
+air/build-mac/
+air/build-linux/
