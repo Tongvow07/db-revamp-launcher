@@ -728,7 +728,9 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     if(relaunching){ goneChecks=0; return; }
     if(gameRunning()){
       goneChecks=0;
-      if(awaitingGame){ awaitingGame=false; if(!outOfSight){ outOfSight=true; try{ window.moveTo(-32000,-32000); }catch(e){} } }
+      /* 1.5.5: the launcher no longer steps off screen while a game runs: with several games it has to stay
+         reachable (Alt+Tab, the taskbar) to start the next one. It still watches every game for a Refresh. */
+      if(awaitingGame){ awaitingGame=false; }
       return;
     }
     if(!outOfSight) return;
