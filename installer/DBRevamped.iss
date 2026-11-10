@@ -6,6 +6,9 @@
 ; Installs per user (no admin prompt) into %LOCALAPPDATA%\DB Revamped, with a Start Menu entry,
 ; an optional desktop shortcut and an entry in Settings > Apps for uninstalling.
 ;
+; 1.5.5 (2026-11-10): several games at once, each a different account or a different server. Game windows 2-4 are
+;        copies of {app}\air with their own signed app ID (air-instances); several DB Revamped sign-ins (Switch to /
+;        Add another account); Refresh brings back the game that closed, as its own account.
 ; 1.5.4 (2026-11-09): FRAME RATE reaches Minesa and other servers too: with 144 or 240 chosen, the AIR engine
 ;        raises that game's own frame rates (30 menus / 100 play) to 127, the most a one-byte value holds.
 ; 1.5.3 (2026-11-09): playing on Minesa or another server no longer drops a few seconds in: the relay now keeps
@@ -89,7 +92,7 @@
 ; "DB Revamped (Classic Flash)" does the same in the Flash projector.
 
 #define AppName "DB Revamped"
-#define AppVersion "1.5.4"
+#define AppVersion "1.5.5"
 #define AppPublisher "DB Revamped"
 #define AppUrl "https://dbrevamped.com"
 ; Plain http: the game reads its http files, which an https page may not.
@@ -137,6 +140,8 @@ Source: "..\launcher-assets\dbui\db-game-ui.*"; DestDir: "{app}\launcher-assets\
 Source: "..\launcher-assets\dbui\dbui.css"; DestDir: "{app}\launcher-assets\dbui"; Flags: ignoreversion
 ; The game in Adobe AIR's runtime (node air\build.js), up to 100 fps. The launcher's default engine.
 Source: "..\air\bundle\*"; DestDir: "{app}\air"; Flags: ignoreversion recursesubdirs createallsubdirs
+; 1.5.5: the signed descriptors of game windows 2-4 (air\build.js); the launcher lays them over copies of {app}\air.
+Source: "..\air\instances\*"; DestDir: "{app}\air-instances"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; Adobe's Flash Player 32 projector, as Adobe signed it (do not patch it: that breaks the signature).
 Source: "..\flashplayer.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "db-revamped.ico"; DestDir: "{app}"; Flags: ignoreversion

@@ -52,3 +52,48 @@ if (!fs.existsSync(path.join(bundle, 'DB Revamped.exe'))) {
     throw new Error('adt produced no DB Revamped.exe');
 }
 console.log(`AIR engine built: ${bundle}`);
+
+// 1.5.5: game slots 2-4, so several games can run at once (AIR runs one copy per application ID).
+// Each slot is the same app packaged and signed with the ID org.dbrevamped.game<n>; the descriptor is
+// signed, so the ID cannot be edited afterwards (AIR refuses it). Only the files that differ from
+// slot 1 are kept, in air\instances\<n>; the launcher lays them over a copy of {app}\air.
+const crypto = require('crypto');
+const hashOf = (file) => crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex');
+function filesUnder(dir, base = dir, out = []) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) filesUnder(full, base, out);
+        else out.push(path.relative(base, full));
+    }
+    return out;
+}
+const instances = path.join(HERE, 'instances');
+fs.rmSync(instances, { recursive: true, force: true });
+const scratch = path.join(HERE, 'build', 'instances');
+for (const slot of [2, 3, 4]) {
+    const xml = fs.readFileSync(path.join(HERE, 'DBRevampedAir-app.xml'), 'utf8')
+        .replace(/<id>([^<]+)<\/id>/, (m, id) => `<id>${id}${slot}</id>`);
+    const dir = path.join(scratch, String(slot));
+    fs.rmSync(dir, { recursive: true, force: true });
+    fs.mkdirSync(dir, { recursive: true });
+    const descriptor = path.join(scratch, `app-${slot}.xml`);
+    fs.writeFileSync(descriptor, xml);
+    bat('adt.bat', [
+        '-package', '-storetype', 'pkcs12', '-keystore', CERT,
+        '-storepass', fs.readFileSync(PASS_FILE, 'utf8').trim(),
+        '-target', 'bundle', dir, descriptor,
+        '-C', path.join(HERE, 'build'), 'DBRevampedAir.swf',
+        '-C', HERE, 'icons'
+    ]);
+    const changed = filesUnder(dir).filter((rel) => {
+        const main = path.join(bundle, rel);
+        return !fs.existsSync(main) || hashOf(main) !== hashOf(path.join(dir, rel));
+    });
+    if (!changed.some((rel) => /application\.xml$/i.test(rel))) throw new Error(`slot ${slot}: its descriptor did not change`);
+    for (const rel of changed) {
+        fs.mkdirSync(path.dirname(path.join(instances, String(slot), rel)), { recursive: true });
+        fs.copyFileSync(path.join(dir, rel), path.join(instances, String(slot), rel));
+    }
+    console.log(`Game slot ${slot}: ${changed.length} files differ (${changed.join(', ')})`);
+}
+fs.rmSync(scratch, { recursive: true, force: true });

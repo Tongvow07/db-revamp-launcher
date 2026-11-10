@@ -15,7 +15,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   var HEALTH=SECURE_HOST+"/api/auth/discord/config";
   /* This launcher's version (the installer's AppVersion; dbui\build.js --verify checks they match) and
      where the newest one is announced. */
-  var LAUNCHER_VERSION="1.5.4";
+  var LAUNCHER_VERSION="1.5.5";
   var LATEST=SECURE_HOST+"/download/launcher.json";
   var SETUP_URL=SECURE_HOST+"/download/DB-Revamped-Setup.exe";
   var API_CREATE=SECURE_HOST+"/api/account/create";
@@ -94,6 +94,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     ".capture-row .dbui-btn-text{font-size:.66em;line-height:1.35em;padding:.35em .4em;white-space:normal}",
     ".capture-none{text-align:center;font-size:.7em;line-height:1.3em;margin:.2em 0}",
     ".or-file{margin-top:.35em}",
+    ".accounts{text-align:center;font-size:.7em;line-height:1.35em;margin:.1em 0 .25em}",
     ".update{margin-bottom:.45em}",
     /* While a request runs the buttons wait; the AIR choice greys out when AIR is not installed. */
     ".panel .dbui-btn[disabled]{cursor:wait}",
@@ -124,6 +125,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     button('CREATE AN ACCOUNT','dbShow(\'register\')','copper'),
     '<span class="dblink dbui-link" onclick="dbForgot()">Forgot your password?</span>',
     button('PLAY ON MINESA OR ANOTHER SERVER','dbShow(\'servers\')','slate','','other-btn'),
+    '<span class="dblink dbui-link" id="backToAccounts" style="display:none" onclick="dbShow(\'signedin\')">Back to your signed-in accounts</span>',
     '<div class="msg dbui-msg" id="msg-signin"></div>',
     '</form>',
     /* Register */
@@ -138,6 +140,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     /* Signed in */
     '<div class="view" id="view-signedin">',
     '<div class="who">Signed in as<b id="whoEmail"></b></div>',
+    '<div class="accounts" id="accountList"></div>',
     '<div class="msg dbui-msg" id="msg-signedin" style="margin-top:0"></div>',
     button('PLAY','dbPlay()','','playBtn'),
     button('SIGN OUT','dbSignOut()','copper'),
@@ -234,7 +237,8 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     for(var i=0;i<names.length;i++){ var v=$('view-'+names[i]); if(v) v.className=(names[i]==name)?'view active':'view'; }
     $('panelTitle').innerHTML=TITLES[name];
     setMsg('');
-    if(name=='signedin'&&session){ $('whoEmail').innerHTML=esc(session.email); showEngine(); }
+    if(name=='signedin'&&session){ $('whoEmail').innerHTML=esc(session.email); showEngine(); showAccounts(); }
+    if(name=='signin'){ var b=$('backToAccounts'); if(b) b.style.display=session?'':'none'; }
     if(name=='transfer'){ showCaptures(); }
     if(name=='servers'){ try{ if(!$('otherUrl').value) $('otherUrl').value=loadOtherUrl(); }catch(e){} }
     fitPanel();
@@ -297,7 +301,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   function loadSession(){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!SESSION_FILE||!fso.FileExists(SESSION_FILE)) return null;
       var ts=fso.OpenTextFile(SESSION_FILE,1,false,-1); var txt=ts.ReadAll(); ts.Close(); var parts=txt.split('\n');
       if(parts.length>=3&&(parts[0]==SECURE_HOST||parts[0]==PLAIN_HOST)&&parts[1]&&parts[2]) return {email:parts[1],token:parts[2].replace(/\s+$/,'')}; }catch(e){} return null; }
-  function saveSession(s){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!fso.FolderExists(SESSION_DIR)) fso.CreateFolder(SESSION_DIR);
+  function saveSession(s){ rememberAccount(s); try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!fso.FolderExists(SESSION_DIR)) fso.CreateFolder(SESSION_DIR);
       var ts=fso.CreateTextFile(SESSION_FILE,true,true); ts.Write(SECURE_HOST+'\n'+s.email+'\n'+s.token); ts.Close(); }catch(e){} }
   /* The engine: the AIR app installed beside flashplayer.exe (installer 1.1.0 and later) runs the
      game at up to 100 fps where Flash Player 32 stops at 60; Flash uses about 0.4-0.5 GB less
@@ -382,18 +386,31 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
 
   /* onRetry (a Refresh's relaunch only): called instead of the error message when the server could not be
      reached or failed (status 0 or 5xx), so the relaunch tries again while the server restarts. */
+  /* 1.5.5: onRetry (a relaunch) may name the account and game slot to bring back (relaunchTarget). */
   window.dbPlay=function(onRetry){
+    var target=onRetry?relaunchTarget:null;
     /* The game's Refresh signs itself in with the saved token and saves the rotated one, so the
        file can be newer than what this launcher read when it opened. */
-    var saved=loadSession(); if(saved&&session) session=saved;
-    if(busy||!session){ if(onRetry) onRetry(); return; }
+    var saved=loadSession(); if(saved&&session&&saved.email==session.email) session=saved;
+    var acc=session;
+    if(target){ acc=findAccount(target.account); if(!acc){ relaunching=false; comeBack(); setMsg('Sign in as '+esc(target.account)+' and press Play to start that game again.'); return; } }
+    if(busy||!acc){ if(onRetry) onRetry(); return; }
+    /* Several games at once: each a different account, or a different server (Minesa and others below). */
+    var slot=target?target.slot:pickSlot();
+    if(!target){
+      if(slot<0){ setMsg(useAir()?'All '+MAX_GAMES+' game windows are in use. Close one first.':'Classic Flash runs one game at a time. Choose the AIR engine to play several accounts at once.',true); return; }
+      if(gameOpenFor('dbrevamped',acc.email)){ setMsg(esc(acc.email)+' is already playing in an open game. Each game must be a different account, or a different server.',true); return; }
+    }
+    var exe;
+    try{ exe=slotExe(slot,true); }catch(e){ setMsg('Could not prepare another game window: '+esc(e.message),true); if(onRetry) relaunching=false; return; }
     setBusy(true); setMsg('Starting the game...');
-    post(API_PLAY,'{"token":"'+jesc(session.token)+'"}',function(status,r){
+    post(API_PLAY,'{"token":"'+jesc(acc.token)+'"}',function(status,r){
       if(status==200&&r.ok&&r.token&&r.launchCode){
-        session={email:r.email,token:r.token}; saveSession(session);
+        var fresh={email:r.email,token:r.token};
+        if(session&&session.email==fresh.email){ session=fresh; saveSession(session); } else rememberAccount(fresh);
         /* The game signs itself in with this one-time code (good for two minutes, used once). */
         var url=SWF+'?dbLaunchEmail='+encodeURIComponent(r.email)+'&dbLaunchCode='+r.launchCode;
-        var exe=useAir()?AIR_EXE:PROJ;
+        registerGame(slot,'dbrevamped',r.email);
         if(useAir()&&loadFps()!=100) url+='&dbFps='+loadFps();
         if(useAir()&&loadScreen()!='full') url+='&dbScreen='+loadScreen();
         relaunching=false;
@@ -407,7 +424,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
       relaunching=false;
       if(status==401||status==403){
         var why=(r&&r.message)?r.message:'Your sign-in has expired. Please sign in again.';
-        var email=session.email; session=null; clearSession(); $('signinEmail').value=email; comeBack(); dbShow('signin'); setMsg(why,true);
+        var email=acc.email; forgetAccount(email); if(session&&session.email==email){ session=null; clearSession(); } $('signinEmail').value=email; comeBack(); dbShow('signin'); setMsg(why,true);
       } else { comeBack(); setMsg(netError(status,r,'Could not start the game.'),true); }
     });
   };
@@ -478,16 +495,17 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
      writes transfers\<server>\<name>.json in its storage folder: a dungeon-blitz-player-capture/1 file the
      server decodes). Newest first; picking one fills in its name. Where a request for that name stands
      (waiting, transferred, not accepted) comes from the server, for the signed-in account only. */
-  var CAPTURE_DIR=null; try{ CAPTURE_DIR=new ActiveXObject('WScript.Shell').ExpandEnvironmentStrings('%APPDATA%')+'\\org.dbrevamped.game\\Local Store\\transfers'; }catch(e){}
+  /* 1.5.5: each game slot is its own AIR app (org.dbrevamped.game, game2..game4) with its own storage folder. */
+  var CAPTURE_DIRS=[]; try{ var ad=new ActiveXObject('WScript.Shell').ExpandEnvironmentStrings('%APPDATA%'); CAPTURE_DIRS=[ad+'\\org.dbrevamped.game\\Local Store\\transfers',ad+'\\org.dbrevamped.game2\\Local Store\\transfers',ad+'\\org.dbrevamped.game3\\Local Store\\transfers',ad+'\\org.dbrevamped.game4\\Local Store\\transfers']; }catch(e){}
   var API_TRANSFER_STATUS=SECURE_HOST+"/api/launcher/transfer-requests";
   var captures=[], pickedCapture=null, requestStatus={};
   function serverLabel(origin){ var h=String(origin||'').replace(/^https?:\/\//i,'').replace(/[\/:?#].*$/,''); return /theminesa/i.test(h)?'Minesa':(h||'another server'); }
-  function findCaptures(){ var out=[]; try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!CAPTURE_DIR||!fso.FolderExists(CAPTURE_DIR)) return out;
+  function findCaptures(){ var out=[]; for(var ci=0;ci<CAPTURE_DIRS.length;ci++){ var CAPTURE_DIR=CAPTURE_DIRS[ci]; try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!fso.FolderExists(CAPTURE_DIR)) continue;
       for(var d=new Enumerator(fso.GetFolder(CAPTURE_DIR).SubFolders);!d.atEnd();d.moveNext()){ for(var f=new Enumerator(d.item().Files);!f.atEnd();f.moveNext()){ var file=f.item();
         if(!/\.json$/i.test(file.Name)||file.Size>TRANSFER_MAX_BYTES) continue;
         try{ var o=JSON.parse(readExport(file.Path).replace(/^\uFEFF/,'')); var nm=o&&o.character&&o.character.name;
           if(o.format!='dungeon-blitz-player-capture/1'||!nm) continue;
-          out.push({path:file.Path,name:String(nm),server:serverLabel(o.source&&o.source.origin),when:new Date(file.DateLastModified)}); }catch(e){} } } }catch(e){}
+          out.push({path:file.Path,name:String(nm),server:serverLabel(o.source&&o.source.origin),when:new Date(file.DateLastModified)}); }catch(e){} } } }catch(e){} }
     out.sort(function(a,b){ return b.when-a.when; }); return out; }
   function shortDate(d){ try{ var m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; return d.getDate()+' '+m[d.getMonth()]; }catch(e){ return ''; } }
   function statusText(name){ var r=requestStatus[String(name).toLowerCase()]; if(!r) return '';
@@ -525,9 +543,13 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     if(!m) return null; var raw=m[1].replace(/\$\{languageParam\}/g,'').replace(/&amp;/g,'&'); if(/\$\{/.test(raw)) return null; return absoluteUrl(raw,base); }
   /* 1.5.4: the FRAME RATE choice goes along as dbFps; the AIR engine raises the other game's own frame rates to it
      (at most 127: Arc Launcher's limit, the rates are one-byte values in the game file). */
-  function startOther(swfUrl){ var url=swfUrl; if(loadScreen()!='full') url+=(url.indexOf('?')<0?'?':'&')+'dbScreen='+loadScreen();
+  function startOther(swfUrl){ var host=serverLabel(swfUrl), slot=pickSlot(true);
+    if(slot<0){ setMsg('All '+MAX_GAMES+' game windows are in use. Close one first.',true); return; }
+    if(gameOpenFor(host,'')){ setMsg('A game on '+esc(host)+' is already open. Each game must be a different account, or a different server.',true); return; }
+    var exe; try{ exe=slotExe(slot,true); }catch(e){ setMsg('Could not prepare another game window: '+esc(e.message),true); return; }
+    var url=swfUrl; if(loadScreen()!='full') url+=(url.indexOf('?')<0?'?':'&')+'dbScreen='+loadScreen();
     if(loadFps()>100) url+=(url.indexOf('?')<0?'?':'&')+'dbFps='+loadFps();
-    try{ new ActiveXObject('WScript.Shell').Run('"'+AIR_EXE+'" "'+url+'"',1,false); awaitingGame=true; setMsg('The game is opening. Sign in on its own screen; every character you enter the world with shows up under Transfer.'); }
+    try{ new ActiveXObject('WScript.Shell').Run('"'+exe+'" "'+url+'"',1,false); registerGame(slot,host,''); awaitingGame=true; setMsg('The game is opening. Sign in on its own screen; every character you enter the world with shows up under Transfer.'); }
     catch(e){ setMsg('Could not start the game: '+esc(e.message),true); } }
   window.dbPlayOther=function(address){
     if(busy) return; var page=normalizeUrl(address);
@@ -567,10 +589,60 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     catch(e){ setMsg('Could not open DB Online: '+esc(e.message),true); } };
   window.dbBack=function(){ dbShow(session?'signedin':'signin'); };
 
+  /* 1.5.5: several DB Revamped accounts. Each sign-in is kept (email + device token) in
+     launcher-accounts.json; the one shown is the current session (launcher-session.txt, as before). */
+  var ACCOUNTS_FILE=SESSION_DIR?SESSION_DIR+'\\launcher-accounts.json':null;
+  function readJson(p,fallback){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!p||!fso.FileExists(p)) return fallback; var ts=fso.OpenTextFile(p,1,false,-1); var t=ts.ReadAll(); ts.Close(); return JSON.parse(t); }catch(e){ return fallback; } }
+  function writeJson(p,v){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!fso.FolderExists(SESSION_DIR)) fso.CreateFolder(SESSION_DIR); var ts=fso.CreateTextFile(p,true,true); ts.Write(JSON.stringify(v)); ts.Close(); }catch(e){} }
+  function loadAccounts(){ var list=readJson(ACCOUNTS_FILE,[]), out=[]; if(!(list instanceof Array)) list=[];
+    for(var i=0;i<list.length;i++) if(list[i]&&list[i].email&&list[i].token) out.push({email:String(list[i].email),token:String(list[i].token)});
+    var cur=loadSession(); if(cur){ var found=false; for(var j=0;j<out.length;j++) if(out[j].email==cur.email){ out[j].token=cur.token; found=true; } if(!found) out.unshift(cur); }
+    return out; }
+  function rememberAccount(a){ if(!a||!a.email||!a.token) return; var list=readJson(ACCOUNTS_FILE,[]); if(!(list instanceof Array)) list=[]; var kept=[{email:a.email,token:a.token}];
+    for(var i=0;i<list.length;i++) if(list[i]&&list[i].email&&list[i].email!=a.email) kept.push(list[i]); writeJson(ACCOUNTS_FILE,kept); }
+  function forgetAccount(email){ var list=readJson(ACCOUNTS_FILE,[]), kept=[]; if(!(list instanceof Array)) list=[]; for(var i=0;i<list.length;i++) if(list[i]&&list[i].email!=email) kept.push(list[i]); writeJson(ACCOUNTS_FILE,kept); }
+  function findAccount(email){ var list=loadAccounts(); for(var i=0;i<list.length;i++) if(list[i].email==email) return list[i]; return null; }
+  function showAccounts(){ var box=$('accountList'); if(!box) return; var list=loadAccounts(), h=[];
+    for(var i=0;i<list.length;i++) if(!session||list[i].email!=session.email) h.push('<span class="dbui-link" onclick="dbSwitchAccount('+i+')">'+esc(list[i].email)+'</span>');
+    box.innerHTML=(h.length?'Switch to: '+h.join(' &middot; ')+'<br>':'')+'<span class="dbui-link" onclick="dbAddAccount()">Add another account</span> &middot; <span class="dbui-link" onclick="dbShow(\'servers\')">Other servers</span>'; }
+  window.dbSwitchAccount=function(i){ var list=loadAccounts(); if(!list[i]) return; session=list[i]; saveSession(session); dbShow('signedin'); setMsg('Press Play to start a game as '+esc(session.email)+'. Games already open keep running.'); };
+  window.dbAddAccount=function(){ $('signinEmail').value=''; $('signinPassword').value=''; dbShow('signin'); setMsg('Sign in with another account. Your other accounts stay signed in.'); };
+
+  /* 1.5.5: game windows. AIR runs one copy per application ID, so game 1 is {app}\air and games 2-4 are
+     copies of it in %APPDATA%\DBRevamped\air-<n> with that slot's signed descriptor (org.dbrevamped.game<n>,
+     shipped in {app}\air-instances\<n>; air\build.js). A copy is remade when the launcher version changes.
+     games.json says which server and account each window was started for: a new game may not be the same
+     account on the same server as an open one (another server's account is not known, so one per server). */
+  var MAX_GAMES=4, GAMES_FILE=SESSION_DIR?SESSION_DIR+'\\games.json':null;
+  function slotExe(slot,prepare){
+    if(slot===0) return PROJ;
+    if(slot==1) return AIR_EXE;
+    var dir=SESSION_DIR+'\\air-'+slot, exe=dir+'\\DB Revamped.exe';
+    if(!prepare) return exe;
+    var fso=new ActiveXObject('Scripting.FileSystemObject'), stamp=dir+'\\slot-version.txt', inst=hereDir()+'\\air-instances\\'+slot;
+    if(!fso.FolderExists(inst)) throw new Error('this install has no extra game windows; run the newest installer');
+    var have=''; try{ if(fso.FileExists(stamp)){ var ts=fso.OpenTextFile(stamp,1,false); have=ts.ReadAll(); ts.Close(); } }catch(e){}
+    if(have!=LAUNCHER_VERSION||!fso.FileExists(exe)){
+      if(fso.FolderExists(dir)) fso.DeleteFolder(dir,true);
+      fso.CopyFolder(hereDir()+'\\air',dir,true);
+      fso.CopyFolder(inst+'\\META-INF',dir+'\\META-INF',true);
+      var w=fso.CreateTextFile(stamp,true); w.Write(LAUNCHER_VERSION); w.Close(); }
+    return exe; }
+  /* The first free game window; Classic Flash (no copies) only when no Flash game is open. */
+  function pickSlot(airOnly){ if(!airOnly&&!useAir()) return slotRunning(0)?-1:0;
+    for(var n=1;n<=MAX_GAMES;n++) if(!slotRunning(n)) return n; return -1; }
+  function registeredGames(){ var g=readJson(GAMES_FILE,[]); return (g instanceof Array)?g:[]; }
+  function registerGame(slot,server,account){ var keep=[], g=registeredGames();
+    for(var i=0;i<g.length;i++) if(g[i]&&g[i].slot!=slot&&slotRunning(g[i].slot)) keep.push(g[i]);
+    keep.push({slot:slot,server:server,account:account||''}); writeJson(GAMES_FILE,keep); }
+  function gameOpenFor(server,account){ var g=registeredGames();
+    for(var i=0;i<g.length;i++) if(g[i]&&g[i].server==server&&(g[i].account||'')==(account||'')&&slotRunning(g[i].slot)) return true; return false; }
+
   window.dbSignOut=function(){
     if(busy) return;
     var old=session; session=null; clearSession();
-    if(old) post(API_FORGET,'{"token":"'+jesc(old.token)+'"}',function(){});
+    if(old){ post(API_FORGET,'{"token":"'+jesc(old.token)+'"}',function(){}); forgetAccount(old.email); }
+    var rest=loadAccounts(); if(rest.length){ session=rest[0]; saveSession(session); dbShow('signedin'); setMsg('Signed out of '+esc(old?old.email:'that account')+'.'); return; }
     if(old) $('signinEmail').value=old.email;
     dbShow('signin'); setMsg('Signed out.');
   };
@@ -602,22 +674,33 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   /* WMI through SWbemLocator: the launcher page runs in a document mode where JScript's GetObject does not
      exist ('GetObject' is undefined), so the old GetObject('winmgmts:...') call threw every time and this
      always said "no game" -- the launcher could never see a running game. */
-  function gameProcesses(){ var out=[]; try{ var mine=[AIR_EXE.toLowerCase(),PROJ.toLowerCase()];
+  function gameProcesses(slot){ var out=[]; try{ var mine=[];
+      if(slot===undefined){ mine=[PROJ.toLowerCase()]; for(var n=1;n<=MAX_GAMES;n++) mine.push(slotExe(n).toLowerCase()); } else mine=[slotExe(slot).toLowerCase()];
       var q=new ActiveXObject('WbemScripting.SWbemLocator').ConnectServer('.','root\\cimv2').ExecQuery("select ProcessId,ExecutablePath from Win32_Process where Name='flashplayer.exe' or Name='DB Revamped.exe'");
-      for(var e=new Enumerator(q);!e.atEnd();e.moveNext()){ var at=String(e.item().ExecutablePath||'').toLowerCase(); if(at==mine[0]||at==mine[1]) out.push(e.item()); } }catch(e){} return out; }
+      for(var e=new Enumerator(q);!e.atEnd();e.moveNext()){ var at=String(e.item().ExecutablePath||'').toLowerCase(); for(var k=0;k<mine.length;k++) if(at==mine[k]){ out.push(e.item()); break; } } }catch(e){} return out; }
+  function slotRunning(slot){ return gameProcesses(slot).length>0; }
   function gameRunning(){ return gameProcesses().length>0; }
   /* Ends our own game by its exact path (never any other program): a game stuck on a dead server, or one
      a Refresh left behind, is ended so a fresh copy can start (AIR runs one copy at a time). */
-  function killGame(){ var n=0, list=gameProcesses(); for(var i=0;i<list.length;i++){ try{ list[i].Terminate(); n++; }catch(e){} } return n; }
+  function killGame(slot){ var n=0, list=gameProcesses(slot); for(var i=0;i<list.length;i++){ try{ list[i].Terminate(); n++; }catch(e){} } return n; }
   /* 1.4.7: Refresh always brings the game back. The game leaves the flag and closes; if it is still there
      after 6 s (stuck), it is ended. Then Play, retried every 3 s while the server is still restarting
      (up to 5 minutes), so a Refresh pressed during a restart still lands back in the game. */
+  /* 1.5.5: with several games open, the one to bring back is the DB Revamped game whose window is gone
+     (games.json says which account played in which slot). With one game it is ended if still open after
+     6 s, as before; with several, none is ended (no telling which one was stuck). */
+  var relaunchTarget=null;
   function relaunchWhenGone(tries){
-    if(gameRunning()){
-      if(tries==12) killGame();
+    var games=registeredGames(), ours=[], gone=null;
+    for(var i=0;i<games.length;i++) if(games[i].server=='dbrevamped') ours.push(games[i]);
+    for(var j=0;j<ours.length;j++) if(!slotRunning(ours[j].slot)){ gone=ours[j]; break; }
+    if(!gone&&!ours.length&&!gameRunning()) gone={slot:pickSlot(),account:session?session.email:''};
+    if(!gone){
+      if(tries==12&&ours.length==1) killGame(ours[0].slot);
       if(tries<20){ window.setTimeout(function(){ relaunchWhenGone(tries+1); },500); return; }
       relaunching=false; comeBack(); setMsg('The game did not close. <span class="force-close" onclick="dbForceClose()">Force close the game</span>, then press Play.',true); return;
     }
+    relaunchTarget={slot:gone.slot,account:gone.account||(session?session.email:'')};
     window.setTimeout(function(){ playWhenServerUp(0); },800);
   }
   /* serverUp can be a few seconds old, so a Play that cannot reach the server (or gets a 5xx) also waits
@@ -634,7 +717,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   /* Back on screen (from out of sight) to say something the player must act on. */
   function comeBack(){ if(outOfSight){ outOfSight=false; awaitingGame=false; goneChecks=0; placeLauncher(); try{ window.focus(); }catch(e){} } }
   window.dbForceClose=function(){
-    var n=killGame(); setMsg(n?'The game was closed. Press Play to start it again.':'The game is not running.'); };
+    var n=killGame(); setMsg(n?(n>1?'The games were closed.':'The game was closed.')+' Press Play to start again.':'The game is not running.'); };
   /* While the game runs the launcher steps out of sight and keeps watching, so a server restart always
      brings the game back as a fresh copy (DB-FPS-LEAK-2026-11-06.md: a game that reloads itself in its
      own process keeps the old copy, 300-650 MB each time, until it crawls). Closing the launcher was
