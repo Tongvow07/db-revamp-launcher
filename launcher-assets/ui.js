@@ -15,7 +15,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   var HEALTH=SECURE_HOST+"/api/auth/discord/config";
   /* This launcher's version (the installer's AppVersion; dbui\build.js --verify checks they match) and
      where the newest one is announced. */
-  var LAUNCHER_VERSION="1.5.5";
+  var LAUNCHER_VERSION="1.5.6";
   var LATEST=SECURE_HOST+"/download/launcher.json";
   var SETUP_URL=SECURE_HOST+"/download/DB-Revamped-Setup.exe";
   var API_CREATE=SECURE_HOST+"/api/account/create";
@@ -86,6 +86,8 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     ".fps{margin-top:.35em}",
     ".fps-opt{float:left;width:31.33%;margin:0}",
     ".fps-opt+.fps-opt{margin-left:3%}",
+    /* 1.5.6: DISPLAY has four choices, two to a row. */
+    ".engine-row+.engine-row{margin-top:.3em}",
     ".transfer-btn{margin-top:.55em}",
     /* 1.5.0: other servers (Minesa, DB Online, any address) and the characters captured there for transfer. */
     ".other-btn{margin-top:.4em}",
@@ -162,9 +164,12 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     '<div class="fps" id="screenBox">',
     '<label class="dbui-label">DISPLAY</label>',
     '<div class="engine-row">',
-    button('<span class="dbui-radio"></span>Full screen','dbSetScreen(\'full\')','slate','screenFull','dbui-btn-small engine-opt fps-opt'),
-    button('<span class="dbui-radio"></span>1600 x 900','dbSetScreen(\'1600x900\')','slate','screen1600x900','dbui-btn-small engine-opt fps-opt'),
-    button('<span class="dbui-radio"></span>1280 x 720','dbSetScreen(\'1280x720\')','slate','screen1280x720','dbui-btn-small engine-opt fps-opt'),
+    button('<span class="dbui-radio"></span>Windowed full screen','dbSetScreen(\'borderless\')','slate','screenBorderless','dbui-btn-small engine-opt'),
+    button('<span class="dbui-radio"></span>Full screen','dbSetScreen(\'full\')','slate','screenFull','dbui-btn-small engine-opt'),
+    '</div>',
+    '<div class="engine-row">',
+    button('<span class="dbui-radio"></span>1600 x 900','dbSetScreen(\'1600x900\')','slate','screen1600x900','dbui-btn-small engine-opt'),
+    button('<span class="dbui-radio"></span>1280 x 720','dbSetScreen(\'1280x720\')','slate','screen1280x720','dbui-btn-small engine-opt'),
     '</div>',
     '</div>',
     '<div class="engine-hint dbui-dim" id="engineHint"></div>',
@@ -335,17 +340,22 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
       b.disabled=!air; b.title=air?'':'For the AIR engine'; b.className=opt+(air&&FPS_CHOICES[i]==fps?lit:dim); } }
   window.dbSetFps=function(v){ if(!useAir()) return; saveFps(v); showFps(true); };
 
-  /* The display the AIR engine opens in: full screen at the screen's own size (the default), or a window
-     with a 1600x900 or 1280x720 game area. The game always draws at the size it is shown, so every
-     choice is sharp; there is no scaled-up option. Remembered in screen.txt and passed as dbScreen;
-     a window that does not fit this screen is greyed out. F11 or Alt+Enter switches in the game. */
-  var SCREEN_FILE=SESSION_DIR?SESSION_DIR+'\\screen.txt':null;
-  var SCREEN_CHOICES=['full','1600x900','1280x720'];
-  function screenFits(v){ if(v=='full') return true; var s=v.split('x'); try{ return screen.availWidth>=+s[0]&&screen.availHeight>=+s[1]; }catch(e){ return true; } }
-  function loadScreen(){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(SCREEN_FILE&&fso.FileExists(SCREEN_FILE)){ var ts=fso.OpenTextFile(SCREEN_FILE,1,false); var v=ts.ReadAll().replace(/\s+/g,''); ts.Close(); for(var i=0;i<SCREEN_CHOICES.length;i++) if(SCREEN_CHOICES[i]==v&&screenFits(v)) return v; } }catch(e){} return 'full'; }
+  /* The display the AIR engine opens in: Windowed full screen (the default since 1.5.6: a borderless
+     window covering the screen, which other windows and Alt+Tab can go over), full screen at the screen's
+     own size, or a window with a 1600x900 or 1280x720 game area. The game always draws at the size it is
+     shown, so every choice is sharp; there is no scaled-up option. Passed as dbScreen (nothing for full
+     screen); a window that does not fit this screen is greyed out. F11 or Alt+Enter switches in the game.
+     Remembered in display.txt. 1.5.6 moved it there from screen.txt, which is no longer read: that is
+     the one-time move of every player to the new default (owner, 2026-11-11). A choice made after that
+     is kept. A new default later means a new file name again. */
+  var SCREEN_FILE=SESSION_DIR?SESSION_DIR+'\\display.txt':null;
+  var SCREEN_CHOICES=['borderless','full','1600x900','1280x720'];
+  var SCREEN_IDS={borderless:'screenBorderless',full:'screenFull'};
+  function screenFits(v){ if(v=='full'||v=='borderless') return true; var s=v.split('x'); try{ return screen.availWidth>=+s[0]&&screen.availHeight>=+s[1]; }catch(e){ return true; } }
+  function loadScreen(){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(SCREEN_FILE&&fso.FileExists(SCREEN_FILE)){ var ts=fso.OpenTextFile(SCREEN_FILE,1,false); var v=ts.ReadAll().replace(/\s+/g,''); ts.Close(); for(var i=0;i<SCREEN_CHOICES.length;i++) if(SCREEN_CHOICES[i]==v&&screenFits(v)) return v; } }catch(e){} return 'borderless'; }
   function saveScreen(v){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!fso.FolderExists(SESSION_DIR)) fso.CreateFolder(SESSION_DIR); var ts=fso.CreateTextFile(SCREEN_FILE,true); ts.Write(v); ts.Close(); }catch(e){} }
-  function showScreen(air){ var cur=loadScreen(), opt='dbui-btn dbui-btn-small engine-opt fps-opt', lit=' dbui-on', dim=' dbui-btn-slate';
-    for(var i=0;i<SCREEN_CHOICES.length;i++){ var v=SCREEN_CHOICES[i], b=$('screen'+(v=='full'?'Full':v)); if(!b) continue; var fits=screenFits(v);
+  function showScreen(air){ var cur=loadScreen(), opt='dbui-btn dbui-btn-small engine-opt', lit=' dbui-on', dim=' dbui-btn-slate';
+    for(var i=0;i<SCREEN_CHOICES.length;i++){ var v=SCREEN_CHOICES[i], b=$(SCREEN_IDS[v]||'screen'+v); if(!b) continue; var fits=screenFits(v);
       b.disabled=!air||!fits; b.title=!air?'For the AIR engine':(fits?'':'Larger than this screen'); b.className=opt+(air&&v==cur?lit:dim); } }
   window.dbSetScreen=function(v){ if(!useAir()||!screenFits(v)) return; saveScreen(v); showScreen(true); };
   window.dbSwitchEngine=function(){ dbSetEngine(useAir()?'flash':'air'); };
