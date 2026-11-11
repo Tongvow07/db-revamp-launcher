@@ -3,10 +3,6 @@ package
    import flash.desktop.NativeApplication;
    import flash.display.Loader;
    import flash.display.NativeWindow;
-   import flash.display.NativeWindowInitOptions;
-   import flash.display.NativeWindowRenderMode;
-   import flash.display.NativeWindowSystemChrome;
-   import flash.display.NativeWindowType;
    import flash.display.Screen;
    import flash.display.Sprite;
    import flash.display.StageDisplayState;
@@ -59,15 +55,6 @@ package
       private var windowWidth:int = 0;
       private var windowHeight:int = 0;
       private var toggleHeld:Boolean = false;
-      /**
-       * dbScreen=borderless (1.5.6, the launcher's "Windowed full screen", its default): the game in a window
-       * with no frame or title bar, covering the whole screen it opens on. Not AIR's full screen: other
-       * windows can come in front of it and Alt+Tab leaves it as it is, the way borderless windowed games
-       * work. Null in the other modes.
-       */
-      private var borderlessWindow:NativeWindow;
-      /** The borderless window covers the whole screen (true) or the screen above the taskbar (F11 / Alt+Enter). */
-      private var borderlessCovers:Boolean = true;
       /** Playing on a server other than DB Revamped (isOtherServer): the game goes through ServerRelay. */
       private var otherServer:Boolean = false;
       private var relay:ServerRelay;
@@ -156,9 +143,12 @@ package
       /**
        * The screen: full screen at the screen's own size by default, always drawn sharp (no scaled-up
        * picture). dbScreen=WxH opens a window with a WxH game area instead, centred and kept on screen.
-       * dbScreen=borderless opens the borderless window that covers the screen (openBorderless).
-       * F11 or Alt+Enter switches between full screen and the window (maximised when none was chosen);
-       * in the borderless window it shows or covers the taskbar.
+       * dbScreen=maximized (1.5.7, the launcher's "Windowed full screen", its default) opens the window
+       * maximised: its title bar (minimise, restore, close) stays on screen, the game fills the rest, and
+       * Windows shows the taskbar as for any maximised window. dbScreen=borderless, what launcher 1.5.6 and
+       * its Direct shortcut send, is the same: 1.5.6 opened a frameless window covering the whole screen,
+       * which looked like full screen (owner, 2026-11-11: the top bar should stay on screen).
+       * F11 or Alt+Enter switches between full screen and the window (maximised when no size was chosen).
        * Esc stays the game's own key (chat, menus): AIR would leave full screen on it, so its default
        * is cancelled while in full screen.
        */
@@ -170,87 +160,16 @@ package
             windowWidth = int(size[1]);
             windowHeight = int(size[2]);
          }
-         if (String(vars.dbScreen || "") == "borderless")
-         {
-            openBorderless();
-         }
-         // After openBorderless: `stage` is then the borderless window's.
+         var maximized:Boolean = /^(maximized|borderless)$/.test(String(vars.dbScreen || ""));
          stage.addEventListener(KeyboardEvent.KEY_DOWN, onScreenKey, true, int.MAX_VALUE);
          stage.addEventListener(KeyboardEvent.KEY_DOWN, onScreenKey, false, int.MAX_VALUE);
          stage.addEventListener(KeyboardEvent.KEY_UP, onScreenKeyUp, true, int.MAX_VALUE);
          stage.addEventListener(KeyboardEvent.KEY_UP, onScreenKeyUp, false, int.MAX_VALUE);
-         if (!borderlessWindow)
-         {
-            setFullScreen(windowWidth == 0);
-         }
+         setFullScreen(windowWidth == 0 && !maximized);
          if (stage.nativeWindow)
          {
             stage.nativeWindow.activate();
          }
-      }
-
-      /**
-       * AIR cannot take the frame off a window once it is made, so the borderless window is a second one:
-       * this app (and later the game in it) moves onto its stage before the game is loaded, and the first
-       * window closes. The game never sees the first window. It gets the same stage settings, the same
-       * render mode as the descriptor's (direct) and a stage the size of the screen, so it draws exactly as
-       * in full screen at that size. Closing it quits the app, as closing the first window did. If it cannot
-       * be made, the game opens in full screen as before.
-       */
-      private function openBorderless() : void
-      {
-         var first:NativeWindow = stage.nativeWindow;
-         try
-         {
-            var options:NativeWindowInitOptions = new NativeWindowInitOptions();
-            options.systemChrome = NativeWindowSystemChrome.NONE;
-            options.type = NativeWindowType.NORMAL;
-            options.transparent = false;
-            options.resizable = false;
-            options.maximizable = false;
-            options.minimizable = true;
-            options.renderMode = NativeWindowRenderMode.DIRECT;
-            var window:NativeWindow = new NativeWindow(options);
-            window.title = first ? first.title : "DB Revamped";
-            window.stage.scaleMode = StageScaleMode.NO_SCALE;
-            window.stage.align = StageAlign.TOP_LEFT;
-            window.stage.quality = StageQuality.HIGH;
-            window.stage.color = 0x000000;
-            window.bounds = screenOf(first).bounds;
-            window.stage.addChild(this);
-            window.addEventListener(Event.CLOSE, onBorderlessClosed);
-            borderlessWindow = window;
-            borderlessCovers = true;
-            if (first)
-            {
-               first.close();
-            }
-         }
-         catch (error:Error)
-         {
-            trace("[DBRevampedAir] borderless: " + error.message);
-            borderlessWindow = null;
-         }
-      }
-
-      /** The screen a window is on (most of it), else the main screen. */
-      private static function screenOf(window:NativeWindow) : Screen
-      {
-         var screens:Array = window ? Screen.getScreensForRectangle(window.bounds) : [];
-         return Screen(screens.length ? screens[0] : Screen.mainScreen);
-      }
-
-      /** F11 / Alt+Enter in the borderless window: cover the whole screen, or leave the taskbar showing. */
-      private function coverScreen(whole:Boolean) : void
-      {
-         var screen:Screen = screenOf(borderlessWindow);
-         borderlessCovers = whole;
-         borderlessWindow.bounds = whole ? screen.bounds : screen.visibleBounds;
-      }
-
-      private function onBorderlessClosed(event:Event) : void
-      {
-         NativeApplication.nativeApplication.exit();
       }
 
       private function setFullScreen(on:Boolean) : void
@@ -314,14 +233,7 @@ package
             if (!toggleHeld)
             {
                toggleHeld = true;
-               if (borderlessWindow)
-               {
-                  coverScreen(!borderlessCovers);
-               }
-               else
-               {
-                  setFullScreen(stage.displayState == StageDisplayState.NORMAL);
-               }
+               setFullScreen(stage.displayState == StageDisplayState.NORMAL);
             }
          }
       }

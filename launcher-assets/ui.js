@@ -15,7 +15,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   var HEALTH=SECURE_HOST+"/api/auth/discord/config";
   /* This launcher's version (the installer's AppVersion; dbui\build.js --verify checks they match) and
      where the newest one is announced. */
-  var LAUNCHER_VERSION="1.5.6";
+  var LAUNCHER_VERSION="1.5.7";
   var LATEST=SECURE_HOST+"/download/launcher.json";
   var SETUP_URL=SECURE_HOST+"/download/DB-Revamped-Setup.exe";
   var API_CREATE=SECURE_HOST+"/api/account/create";
@@ -340,8 +340,10 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
       b.disabled=!air; b.title=air?'':'For the AIR engine'; b.className=opt+(air&&FPS_CHOICES[i]==fps?lit:dim); } }
   window.dbSetFps=function(v){ if(!useAir()) return; saveFps(v); showFps(true); };
 
-  /* The display the AIR engine opens in: Windowed full screen (the default since 1.5.6: a borderless
-     window covering the screen, which other windows and Alt+Tab can go over), full screen at the screen's
+  /* The display the AIR engine opens in: Windowed full screen (the default since 1.5.6; since 1.5.7 a
+     maximised window with its title bar on screen, sent as dbScreen=maximized. 1.5.6 sent "borderless",
+     a frameless window covering the screen that looked like full screen; display.txt still stores
+     "borderless" for this choice, so nobody's choice changes), full screen at the screen's
      own size, or a window with a 1600x900 or 1280x720 game area. The game always draws at the size it is
      shown, so every choice is sharp; there is no scaled-up option. Passed as dbScreen (nothing for full
      screen); a window that does not fit this screen is greyed out. F11 or Alt+Enter switches in the game.
@@ -353,6 +355,8 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   var SCREEN_IDS={borderless:'screenBorderless',full:'screenFull'};
   function screenFits(v){ if(v=='full'||v=='borderless') return true; var s=v.split('x'); try{ return screen.availWidth>=+s[0]&&screen.availHeight>=+s[1]; }catch(e){ return true; } }
   function loadScreen(){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(SCREEN_FILE&&fso.FileExists(SCREEN_FILE)){ var ts=fso.OpenTextFile(SCREEN_FILE,1,false); var v=ts.ReadAll().replace(/\s+/g,''); ts.Close(); for(var i=0;i<SCREEN_CHOICES.length;i++) if(SCREEN_CHOICES[i]==v&&screenFits(v)) return v; } }catch(e){} return 'borderless'; }
+  /* What dbScreen carries for the saved choice: 'maximized' for Windowed full screen, else the WxH. */
+  function screenParam(){ var v=loadScreen(); return v=='borderless'?'maximized':v; }
   function saveScreen(v){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!fso.FolderExists(SESSION_DIR)) fso.CreateFolder(SESSION_DIR); var ts=fso.CreateTextFile(SCREEN_FILE,true); ts.Write(v); ts.Close(); }catch(e){} }
   function showScreen(air){ var cur=loadScreen(), opt='dbui-btn dbui-btn-small engine-opt', lit=' dbui-on', dim=' dbui-btn-slate';
     for(var i=0;i<SCREEN_CHOICES.length;i++){ var v=SCREEN_CHOICES[i], b=$(SCREEN_IDS[v]||'screen'+v); if(!b) continue; var fits=screenFits(v);
@@ -422,7 +426,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
         var url=SWF+'?dbLaunchEmail='+encodeURIComponent(r.email)+'&dbLaunchCode='+r.launchCode;
         registerGame(slot,'dbrevamped',r.email);
         if(useAir()&&loadFps()!=100) url+='&dbFps='+loadFps();
-        if(useAir()&&loadScreen()!='full') url+='&dbScreen='+loadScreen();
+        if(useAir()&&loadScreen()!='full') url+='&dbScreen='+screenParam();
         relaunching=false;
         try{ new ActiveXObject('WScript.Shell').Run('"'+exe+'" "'+url+'"',1,false); setMsg('The game is opening - you are signed in.'); awaitingGame=true; }
         catch(e){ comeBack(); setMsg('Could not start the game: '+e.message,true); }
@@ -557,7 +561,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     if(slot<0){ setMsg('All '+MAX_GAMES+' game windows are in use. Close one first.',true); return; }
     if(gameOpenFor(host,'')){ setMsg('A game on '+esc(host)+' is already open. Each game must be a different account, or a different server.',true); return; }
     var exe; try{ exe=slotExe(slot,true); }catch(e){ setMsg('Could not prepare another game window: '+esc(e.message),true); return; }
-    var url=swfUrl; if(loadScreen()!='full') url+=(url.indexOf('?')<0?'?':'&')+'dbScreen='+loadScreen();
+    var url=swfUrl; if(loadScreen()!='full') url+=(url.indexOf('?')<0?'?':'&')+'dbScreen='+screenParam();
     if(loadFps()>100) url+=(url.indexOf('?')<0?'?':'&')+'dbFps='+loadFps();
     try{ new ActiveXObject('WScript.Shell').Run('"'+exe+'" "'+url+'"',1,false); registerGame(slot,host,''); awaitingGame=true; setMsg('The game is opening. Sign in on its own screen; every character you enter the world with shows up under Transfer.'); }
     catch(e){ setMsg('Could not start the game: '+esc(e.message),true); } }

@@ -6,6 +6,12 @@
 ; Installs per user (no admin prompt) into %LOCALAPPDATA%\DB Revamped, with a Start Menu entry,
 ; an optional desktop shortcut and an entry in Settings > Apps for uninstalling.
 ;
+; 1.5.7 (2026-11-11): Windowed full screen: a maximised window with its title bar. The AIR engine opens its own
+;        framed window maximised (title bar with minimise / restore / close on screen, the game fills the rest, the
+;        taskbar as Windows shows it for any maximised window) for dbScreen=maximized, which the launcher sends, and
+;        for dbScreen=borderless (1.5.6 launchers and shortcuts). 1.5.6's frameless window covering the whole screen
+;        looked like full screen (owner, 2026-11-11). F11 / Alt+Enter switch between it and Full screen. The saved
+;        choice in display.txt is kept as it is. The Direct shortcut sends dbScreen=maximized.
 ; 1.5.6 (2026-11-11): Display: Windowed full screen, now the default. DISPLAY gains "Windowed full screen": the AIR
 ;        engine opens a borderless window covering the screen (a second NativeWindow with systemChrome none, made
 ;        before the game loads; AIR cannot take the frame off its first window), which other windows and Alt+Tab
@@ -98,7 +104,7 @@
 ; "DB Revamped (Classic Flash)" does the same in the Flash projector.
 
 #define AppName "DB Revamped"
-#define AppVersion "1.5.6"
+#define AppVersion "1.5.7"
 #define AppPublisher "DB Revamped"
 #define AppUrl "https://dbrevamped.com"
 ; Plain http: the game reads its http files, which an https page may not.
@@ -167,8 +173,8 @@ Type: files; Name: "{app}\app.ico"
 Name: "{autoprograms}\{#AppName}"; Filename: "{sys}\mshta.exe"; Parameters: """{app}\DungeonBlitzR.hta"""; WorkingDir: "{app}"; IconFilename: "{app}\db-revamped.ico"; Comment: "Play DB Revamped"
 Name: "{autodesktop}\{#AppName}"; Filename: "{sys}\mshta.exe"; Parameters: """{app}\DungeonBlitzR.hta"""; WorkingDir: "{app}"; IconFilename: "{app}\db-revamped.ico"; Comment: "Play DB Revamped"; Tasks: desktopicon
 ; Without the launcher: the game straight on its address, in AIR or in the Flash projector.
-; 1.5.6: the AIR one opens in Windowed full screen, the launcher's default (dbScreen=borderless).
-Name: "{autoprograms}\{#AppName} (Direct)"; Filename: "{app}\air\DB Revamped.exe"; Parameters: """{#GameUrl}?dbScreen=borderless"""; WorkingDir: "{app}\air"; IconFilename: "{app}\db-revamped.ico"; Comment: "Play DB Revamped without the launcher (AIR)"
+; 1.5.6: the AIR one opens in Windowed full screen, the launcher's default; 1.5.7: as a maximised window (dbScreen=maximized).
+Name: "{autoprograms}\{#AppName} (Direct)"; Filename: "{app}\air\DB Revamped.exe"; Parameters: """{#GameUrl}?dbScreen=maximized"""; WorkingDir: "{app}\air"; IconFilename: "{app}\db-revamped.ico"; Comment: "Play DB Revamped without the launcher (AIR)"
 Name: "{autoprograms}\{#AppName} (Classic Flash)"; Filename: "{app}\flashplayer.exe"; Parameters: """{#GameUrl}"""; WorkingDir: "{app}"; IconFilename: "{app}\db-revamped.ico"; Comment: "Play DB Revamped without the launcher, in Flash Player (uses less memory)"
 
 ; No "Start now" at the end: setup starting mshta was itself flagged by Defender
