@@ -320,7 +320,7 @@ package
             return true;
          }
          var host:Array = /^https?:\/\/([^\/:?#]+)/i.exec(url);
-         return !host || !/^((www\.)?dbrevamped\.com|dungeonblitzv\.duckdns\.org|localhost|127\.0\.0\.1)$/i.test(host[1]);
+         return !host || !/^((www\.)?dbrevamped\.com|localhost|127\.0\.0\.1)$/i.test(host[1]);
       }
 
       private static function originOf(url:String) : String
