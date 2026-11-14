@@ -54,6 +54,13 @@ package dbrevamped.relay
       private var sockets:Array = [];
       private var connections:int = 0;
       private var kept:Object = {};
+      /**
+       * 1.5.8: "host:port" -> the ws:// or wss:// address that stands in for it, from the server's /web
+       * page (Ruffle's socketProxy, which the launcher passes as dbSocketProxy). See webSocketFor.
+       */
+      private var proxies:Object = {};
+      /** dbWs=1 (tests): every address that has a WebSocket goes through it first. */
+      public var forceWebSocket:Boolean = false;
 
       /** origin: the other server's web address (http://host[:port]), written into each capture. */
       public function ServerRelay(origin:String)
@@ -110,6 +117,35 @@ package dbrevamped.relay
          trace("[ServerRelay] 127.0.0.1:" + listenPort + " -> " + key);
       }
 
+      /**
+       * 1.5.8: the server's own WebSocket for its game address host:port. A game whose address is this
+       * computer (localhost) while its page is on another host can only be reached that way (a server on
+       * someone's PC behind a web tunnel), so the relay opens the WebSocket straight away. For any other
+       * address the TCP port comes first, and the WebSocket only when that port cannot be reached at all.
+       */
+      public function webSocketFor(host:String, port:int, url:String) : void
+      {
+         if (!WebSocketUpstream.canUse(url))
+         {
+            trace("[ServerRelay] " + host + ":" + port + " via " + url + ": not usable here");
+            return;
+         }
+         proxies[host.toLowerCase() + ":" + port] = url;
+         trace("[ServerRelay] " + host + ":" + port + " can go through " + url);
+      }
+
+      /** Whether host goes to its WebSocket before its TCP port is tried (see webSocketFor). */
+      private function webSocketFirst(host:String) : Boolean
+      {
+         var page:Array = /^https?:\/\/([^\/:?#]+)/i.exec(origin);
+         return isLoopback(host) && !(page && isLoopback(page[1]));
+      }
+
+      private static function isLoopback(host:String) : Boolean
+      {
+         return /^(127\.\d+\.\d+\.\d+|localhost|::1|\[::1\])$/i.test(host);
+      }
+
       /** Stops every relay (the game is closing). */
       public function close() : void
       {
@@ -153,7 +189,11 @@ package dbrevamped.relay
       private function pipe(client:Socket, host:String, port:int) : void
       {
          var connection:int = ++connections;
-         var upstream:Socket = new Socket();
+         var proxyUrl:String = proxies[host.toLowerCase() + ":" + port] || null;
+         var viaWebSocket:Boolean = proxyUrl != null && (forceWebSocket || webSocketFirst(host));
+         // A Socket, or a WebSocketUpstream standing in for one (1.5.8).
+         var upstream:* = viaWebSocket ? new WebSocketUpstream(proxyUrl, origin) : new Socket();
+         var where:String = viaWebSocket ? host + ":" + port + " via " + proxyUrl : host + ":" + port;
          var pendingUp:ByteArray = new ByteArray();
          var down:ByteArray = new ByteArray();
          var firstChecked:Boolean = false;
@@ -169,7 +209,7 @@ package dbrevamped.relay
          {
             return function(... ignored) : void
             {
-               trace("[ServerRelay] #" + connection + " " + host + ":" + port + " ended: " + why + "; bytes up " + stats.up + ", down " + stats.down + "; last packets down " + stats.last.join(" "));
+               trace("[ServerRelay] #" + connection + " " + where + " ended: " + why + "; bytes up " + stats.up + ", down " + stats.down + "; last packets down " + stats.last.join(" "));
                finish();
             };
          };
@@ -240,44 +280,87 @@ package dbrevamped.relay
          client.addEventListener(Event.CLOSE, finishBy("the game closed it"));
          client.addEventListener(IOErrorEvent.IO_ERROR, finishBy("game-side socket error"));
 
-         upstream.addEventListener(Event.CONNECT, function(event:Event) : void
+         // 1.5.8: a TCP port that cannot be reached at all is tried once more through the server's WebSocket.
+         var failed:Function = function(why:String) : Function
          {
-            upstreamOpen = true;
-            if (pendingUp.length)
+            return function(... ignored) : void
             {
-               upstream.writeBytes(pendingUp);
-               upstream.flush();
-               pendingUp.clear();
-            }
-         });
-         upstream.addEventListener(ProgressEvent.SOCKET_DATA, function(event:ProgressEvent) : void
+               if (!upstreamOpen && !viaWebSocket && proxyUrl && !closed)
+               {
+                  trace("[ServerRelay] #" + connection + " " + where + ": " + why + "; trying " + proxyUrl);
+                  try { upstream.close(); } catch (e3:Error) {}
+                  viaWebSocket = true;
+                  where = host + ":" + port + " via " + proxyUrl;
+                  upstream = new WebSocketUpstream(proxyUrl, origin);
+                  pair.upstream = upstream;
+                  openUpstream();
+                  return;
+               }
+               finishBy(why)();
+            };
+         };
+         var openUpstream:Function = function() : void
          {
-            down.position = down.length;
-            var before:int = down.length;
-            upstream.readBytes(down, down.length);
-            stats.down += down.length - before;
-            try
+            var up:* = upstream;
+            up.addEventListener(Event.CONNECT, function(event:Event) : void
             {
-               down = pump(down, client, connection, stats);
-            }
-            catch (error:Error)
+               upstreamOpen = true;
+               if (viaWebSocket)
+               {
+                  trace("[ServerRelay] #" + connection + " " + where);
+               }
+               if (pendingUp.length)
+               {
+                  up.writeBytes(pendingUp);
+                  up.flush();
+                  pendingUp.clear();
+               }
+            });
+            up.addEventListener(ProgressEvent.SOCKET_DATA, function(event:ProgressEvent) : void
             {
-               trace("[ServerRelay] #" + connection + " forwarding failed: " + error.getStackTrace());
-               finish();
-            }
-         });
-         // The server closes after sending the client elsewhere: what was read still reaches the client.
-         upstream.addEventListener(Event.CLOSE, function(event:Event) : void
-         {
-            if (down.length && client.connected)
+               down.position = down.length;
+               var before:int = down.length;
+               up.readBytes(down, down.length);
+               stats.down += down.length - before;
+               try
+               {
+                  down = pump(down, client, connection, stats);
+               }
+               catch (error:Error)
+               {
+                  trace("[ServerRelay] #" + connection + " forwarding failed: " + error.getStackTrace());
+                  finish();
+               }
+            });
+            // The server closes after sending the client elsewhere: what was read still reaches the client.
+            up.addEventListener(Event.CLOSE, function(event:Event) : void
             {
-               client.writeBytes(down);
+               if (up != upstream)
+               {
+                  return;
+               }
+               if (down.length && client.connected)
+               {
+                  client.writeBytes(down);
+               }
+               finishBy("the server closed it")();
+            });
+            up.addEventListener(IOErrorEvent.IO_ERROR, function(event:IOErrorEvent) : void
+            {
+               if (up == upstream) failed("server-side socket error (" + event.text + ")")();
+            });
+            up.addEventListener(SecurityErrorEvent.SECURITY_ERROR, function(event:SecurityErrorEvent) : void
+            {
+               if (up == upstream) failed("server-side security error (" + event.text + ")")();
+            });
+            if (!viaWebSocket && proxyUrl)
+            {
+               // A dropped connect would wait out the whole default timeout before the WebSocket gets its turn.
+               up.timeout = 8000;
             }
-            finishBy("the server closed it")();
-         });
-         upstream.addEventListener(IOErrorEvent.IO_ERROR, finishBy("server-side socket error"));
-         upstream.addEventListener(SecurityErrorEvent.SECURITY_ERROR, finishBy("server-side security error"));
-         upstream.connect(host, port);
+            up.connect(host, port);
+         };
+         openUpstream();
       }
 
       /** Forwards every whole packet in `down` (rewriting 0x21, copying 0x10); returns what is left. */

@@ -262,7 +262,7 @@ package
          {
             // The SWF reads its web address from `origin`: it runs from this app, not from its server.
             vars.origin = originOf(page);
-            game = throughRelay(game, int(vars.dbFps));
+            game = throughRelay(game, int(vars.dbFps), String(vars.dbSocketProxy || ""), vars.dbWs == "1");
          }
          context.parameters = vars;
          var loader:Loader = new Loader();
@@ -276,12 +276,26 @@ package
       /**
        * Another server's game, logging in through ServerRelay so the launcher can offer its characters
        * for transfer. If its login address cannot be found, the game runs as it came (no transfer list).
+       *
+       * 1.5.8: socketProxy is the server page's Ruffle socketProxy as the launcher passes it (dbSocketProxy:
+       * "host:port=ws(s)://address", several joined by commas): the game addresses that its server also
+       * takes over a WebSocket. A server on someone's PC behind a web tunnel can only be reached that way.
+       * forceWebSocket (dbWs=1) uses them first everywhere, to test against a local server.
        */
-      private function throughRelay(game:ByteArray, fps:int) : ByteArray
+      private function throughRelay(game:ByteArray, fps:int, socketProxy:String, forceWebSocket:Boolean) : ByteArray
       {
          try
          {
             relay = new ServerRelay(originOf(page));
+            relay.forceWebSocket = forceWebSocket;
+            for each (var entry:String in socketProxy.split(","))
+            {
+               var proxy:Array = /^([^:=\s]+):(\d{1,5})=(wss?:\/\/\S+)$/i.exec(entry);
+               if (proxy)
+               {
+                  relay.webSocketFor(proxy[1], int(proxy[2]), proxy[3]);
+               }
+            }
             var port:int = relay.reserve();
             var patcher:SwfLoginPatch = new SwfLoginPatch();
             // dbFps (the launcher's FRAME RATE above 100) replaces the game's own frame rates, up to 127.

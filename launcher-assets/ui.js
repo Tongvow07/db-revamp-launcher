@@ -15,7 +15,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   var HEALTH=SECURE_HOST+"/api/auth/discord/config";
   /* This launcher's version (the installer's AppVersion; dbui\build.js --verify checks they match) and
      where the newest one is announced. */
-  var LAUNCHER_VERSION="1.5.7";
+  var LAUNCHER_VERSION="1.5.8";
   var LATEST=SECURE_HOST+"/download/launcher.json";
   var SETUP_URL=SECURE_HOST+"/download/DB-Revamped-Setup.exe";
   var API_CREATE=SECURE_HOST+"/api/account/create";
@@ -555,14 +555,27 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     return base.replace(/[?#].*$/,'').replace(/[^\/]*$/,'')+ref; }
   function findSwf(html,base){ var m=/(?:const|let|var)\s+swfUrl\s*=\s*[\x60'"]([^\x60'"]*DungeonBlitz\.swf[^\x60'"]*)[\x60'"]/i.exec(html)||/(?:data|src|movie)\s*[=:]\s*['"]([^'"]*DungeonBlitz\.swf[^'"]*)['"]/i.exec(html);
     if(!m) return null; var raw=m[1].replace(/\$\{languageParam\}/g,'').replace(/&amp;/g,'&'); if(/\$\{/.test(raw)) return null; return absoluteUrl(raw,base); }
+  /* 1.5.8: the game addresses the page's server also takes over a WebSocket (Ruffle's socketProxy on a /web page),
+     as "host:port=ws(s)://address" joined by commas, for dbSocketProxy. A server run on someone's PC behind a web
+     tunnel gives its game the address localhost, which only that WebSocket reaches; the AIR engine's relay uses it.
+     A page may point the WebSocket at its own host (the server's WEBSOCKET_PUBLIC_URL as a path), set by a script. */
+  function findSocketProxy(html,base){ var m=/["']?socketProxy["']?\s*:\s*(\[[^\[\]]*\])/.exec(html); if(!m) return '';
+    var list; try{ list=JSON.parse(m[1]); }catch(e){ return ''; } if(!list||!list.length) return '';
+    var at=/^(https?):\/\/([^\/?#]+)/i.exec(base)||[];
+    var follow=/proxyUrl\s*=\s*\(\s*location\.protocol\s*===?\s*["']https:["']\s*\?\s*["']wss:\/\/["']\s*:\s*["']ws:\/\/["']\s*\)\s*\+\s*location\.host\s*\+\s*["']([^"']*)["']/.exec(html);
+    var out=[]; for(var i=0;i<list.length;i++){ var e=list[i]; if(!e) continue; var u=String(e.proxyUrl||'');
+      if(follow&&at[2]) u=(at[1].toLowerCase()=='https'?'wss://':'ws://')+at[2]+follow[1];
+      if(/^wss?:\/\/[^\s&#"'%,]+$/i.test(u)&&/^[A-Za-z0-9.\-]+$/.test(String(e.host))&&/^\d{1,5}$/.test(String(e.port))) out.push(e.host+':'+e.port+'='+u); }
+    return out.join(','); }
   /* 1.5.4: the FRAME RATE choice goes along as dbFps; the AIR engine raises the other game's own frame rates to it
      (at most 127: Arc Launcher's limit, the rates are one-byte values in the game file). */
-  function startOther(swfUrl){ var host=serverLabel(swfUrl), slot=pickSlot(true);
+  function startOther(swfUrl,socketProxy){ var host=serverLabel(swfUrl), slot=pickSlot(true);
     if(slot<0){ setMsg('All '+MAX_GAMES+' game windows are in use. Close one first.',true); return; }
     if(gameOpenFor(host,'')){ setMsg('A game on '+esc(host)+' is already open. Each game must be a different account, or a different server.',true); return; }
     var exe; try{ exe=slotExe(slot,true); }catch(e){ setMsg('Could not prepare another game window: '+esc(e.message),true); return; }
     var url=swfUrl; if(loadScreen()!='full') url+=(url.indexOf('?')<0?'?':'&')+'dbScreen='+screenParam();
     if(loadFps()>100) url+=(url.indexOf('?')<0?'?':'&')+'dbFps='+loadFps();
+    if(socketProxy) url+=(url.indexOf('?')<0?'?':'&')+'dbSocketProxy='+socketProxy;
     try{ new ActiveXObject('WScript.Shell').Run('"'+exe+'" "'+url+'"',1,false); registerGame(slot,host,''); awaitingGame=true; setMsg('The game is opening. Sign in on its own screen; every character you enter the world with shows up under Transfer.'); }
     catch(e){ setMsg('Could not start the game: '+esc(e.message),true); } }
   window.dbPlayOther=function(address){
@@ -575,7 +588,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     /* The page as given first, then the same address over the other scheme (https <-> http) when the
        first cannot be reached at all; a page that answers is never retried. */
     var pages=[page, /^https:/i.test(page)?page.replace(/^https:/i,'http:'):page.replace(/^http:/i,'https:')];
-    var done=false, finish=function(swf,err){ if(done) return; done=true; setBusy(false); if(swf) startOther(swf); else setMsg(err,true); };
+    var done=false, finish=function(swf,err,proxy){ if(done) return; done=true; setBusy(false); if(swf) startOther(swf,proxy); else setMsg(err,true); };
     var unreachable='Could not reach '+esc(serverLabel(page))+'. It may be down, or not answering your connection; try again later.';
     var tryPage=function(i){
       if(i>=pages.length){ finish(null,unreachable); return; }
@@ -587,7 +600,8 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
           if(st==0||st>=12000){ next(); return; }
           settled=true;
           if(st!=200){ finish(null,esc(serverLabel(page))+' did not answer with its game page (status '+st+'). Check the address, or try again later.'); return; }
-          var swf=findSwf(String(x.responseText||''),pages[i]); finish(swf,'That page has no Dungeon Blitz game on it. Enter the game page, or the address of its DungeonBlitz.swf.'); };
+          var html=String(x.responseText||''), swf=findSwf(html,pages[i]);
+          finish(swf,'That page has no Dungeon Blitz game on it. Enter the game page, or the address of its DungeonBlitz.swf.',swf?findSocketProxy(html,pages[i]):''); };
         x.send(); window.setTimeout(function(){ if(settled) return; try{ x.abort(); }catch(e){} next(); },10000);
       }catch(e){ next(); } };
     tryPage(0); };

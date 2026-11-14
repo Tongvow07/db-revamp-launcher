@@ -6,6 +6,12 @@
 ; Installs per user (no admin prompt) into %LOCALAPPDATA%\DB Revamped, with a Start Menu entry,
 ; an optional desktop shortcut and an entry in Settings > Apps for uninstalling.
 ;
+; 1.5.8 (2026-11-14): PLAY ON THIS SERVER reaches servers whose game socket is a WebSocket only. A server run on
+;        someone's PC behind a web tunnel (Cloudflare quick tunnels carry web traffic only) gives its game the login
+;        address localhost, and its /web page tells Ruffle to use a ws:// or wss:// address instead (socketProxy). The
+;        launcher now reads that from the page and passes it on (dbSocketProxy); the AIR engine's relay opens that
+;        WebSocket for a localhost game address on another host's page, and for any other address when its TCP port
+;        cannot be reached at all. Minesa and other servers with an open game port connect exactly as before.
 ; 1.5.7 (2026-11-11): Windowed full screen: a maximised window with its title bar. The AIR engine opens its own
 ;        framed window maximised (title bar with minimise / restore / close on screen, the game fills the rest, the
 ;        taskbar as Windows shows it for any maximised window) for dbScreen=maximized, which the launcher sends, and
@@ -104,7 +110,7 @@
 ; "DB Revamped (Classic Flash)" does the same in the Flash projector.
 
 #define AppName "DB Revamped"
-#define AppVersion "1.5.7"
+#define AppVersion "1.5.8"
 #define AppPublisher "DB Revamped"
 #define AppUrl "https://dbrevamped.com"
 ; Plain http: the game reads its http files, which an https page may not.
