@@ -15,7 +15,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   var HEALTH=SECURE_HOST+"/api/auth/discord/config";
   /* This launcher's version (the installer's AppVersion; dbui\build.js --verify checks they match) and
      where the newest one is announced. */
-  var LAUNCHER_VERSION="1.5.8";
+  var LAUNCHER_VERSION="1.5.9";
   var LATEST=SECURE_HOST+"/download/launcher.json";
   var SETUP_URL=SECURE_HOST+"/download/DB-Revamped-Setup.exe";
   var API_CREATE=SECURE_HOST+"/api/account/create";
@@ -194,7 +194,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     /* Other servers. Minesa or any address: the game runs in the AIR engine through a relay on this PC
        (air/src/ServerRelay.as), which keeps each character's save so it can be sent here for transfer;
        nothing is sent anywhere until the player sends it. DB Online signs in only through its own
-       launcher, so that button starts it (or opens its website to get it). */
+       launcher; 1.5.9 starts a copy of it through the same relay (dbPlayOnline), or its website to get it. */
     '<div class="view" id="view-servers">',
     '<div class="msg dbui-msg" id="msg-servers" style="margin-top:0"></div>',
     button('PLAY ON MINESA','dbPlayMinesa()','','minesaBtn'),
@@ -607,13 +607,25 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     tryPage(0); };
   window.dbPlayMinesa=function(){ dbPlayOther(MINESA_URL); };
   window.dbPlayOtherTyped=function(){ dbPlayOther($('otherUrl').value); };
-  /* DB Online signs players in through its own launcher (a device check of theirs), so the button starts
-     that launcher where its installer puts it, or opens dungeonblitz.online to get it. */
-  var ONLINE_EXE=null; try{ ONLINE_EXE=new ActiveXObject('WScript.Shell').ExpandEnvironmentStrings('%LOCALAPPDATA%')+'\\Programs\\Dungeon Blitz\\DungeonBlitz.exe'; }catch(e){}
+  /* DB Online signs players in through its own launcher (a device check of theirs). 1.5.9: that launcher is
+     started by a game slot of ours in DB Online mode (DB Revamped.exe --dbo=<its folder>; air\src\dbrevamped\
+     relay\DboSession.as): a copy of it logs in through our relay, which saves each character entered for
+     TRANSFER TO DB REVAMPED. Without the AIR engine it starts on its own (no transfer); not installed, its
+     website opens to get it. */
+  var ONLINE_DIR=null; try{ ONLINE_DIR=new ActiveXObject('WScript.Shell').ExpandEnvironmentStrings('%LOCALAPPDATA%')+'\\Programs\\Dungeon Blitz'; }catch(e){}
+  var ONLINE_EXE=ONLINE_DIR?ONLINE_DIR+'\\DungeonBlitz.exe':null;
   window.dbPlayOnline=function(){ var sh; try{ sh=new ActiveXObject('WScript.Shell'); }catch(e){ setMsg('Open https://dungeonblitz.online/ in your browser.',true); return; }
     var have=false; try{ have=!!ONLINE_EXE&&new ActiveXObject('Scripting.FileSystemObject').FileExists(ONLINE_EXE); }catch(e){}
-    try{ if(have){ sh.Run('"'+ONLINE_EXE+'"',1,false); setMsg('DB Online\'s launcher is opening.'); }
-      else { sh.Run('https://dungeonblitz.online/',1,false); setMsg('DB Online is played through its own launcher: its website is open in your browser to download it. Then press PLAY DB ONLINE again.'); } }
+    if(!have){ try{ sh.Run('https://dungeonblitz.online/',1,false); }catch(e){}
+      setMsg('DB Online is played through its own launcher: its website is open in your browser to download it. Install it, then press PLAY DB ONLINE again.'); return; }
+    if(!hasAir()){ try{ sh.Run('"'+ONLINE_EXE+'"',1,false); setMsg('DB Online\'s launcher is opening. Transfers from it need the AIR engine: run the DB Revamped installer again to add it.'); }
+      catch(e){ setMsg('Could not open DB Online: '+esc(e.message),true); } return; }
+    if(gameOpenFor('dungeonblitz.online','')){ setMsg('DB Online is already open from here. Close it first.',true); return; }
+    var slot=pickSlot(true);
+    if(slot<0){ setMsg('All '+MAX_GAMES+' game windows are in use. Close one first.',true); return; }
+    var exe; try{ exe=slotExe(slot,true); }catch(e){ setMsg('Could not prepare another game window: '+esc(e.message),true); return; }
+    try{ sh.Run('"'+exe+'" "--dbo='+ONLINE_DIR+'"',1,false); registerGame(slot,'dungeonblitz.online','');
+      setMsg('DB Online is opening. Close its own launcher first if it is open. Sign in there and enter the world with each character you want to move: they show up under TRANSFER TO DB REVAMPED.'); }
     catch(e){ setMsg('Could not open DB Online: '+esc(e.message),true); } };
   window.dbBack=function(){ dbShow(session?'signedin':'signin'); };
 

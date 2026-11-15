@@ -61,6 +61,19 @@ package dbrevamped.relay
       private var proxies:Object = {};
       /** dbWs=1 (tests): every address that has a WebSocket goes through it first. */
       public var forceWebSocket:Boolean = false;
+      /**
+       * 1.5.9: which game's layout the captures are in, for the DB Revamped server's decoder
+       * (core/PlayerDataCapture.ts captureProfileOf). DB Online's differs from ours in five fields.
+       */
+      public var protocolProfile:String = "db-r-local-2026-10-22";
+      /** 1.5.9: called with the character's name each time its player data is saved. */
+      public var onKept:Function = null;
+      /**
+       * 1.5.9: every enter-world packet is pointed at 127.0.0.1 on this port instead of a relay per
+       * server. DB Online's own launcher core leaves its game port (7498) to whoever runs its login
+       * through a local address, and its game client expects the game there.
+       */
+      public var fixedEnterWorld:int = 0;
 
       /** origin: the other server's web address (http://host[:port]), written into each capture. */
       public function ServerRelay(origin:String)
@@ -106,6 +119,25 @@ package dbrevamped.relay
             return listenPort;
          }
          throw new Error("no free local port between " + PORT_FIRST + " and " + PORT_LAST);
+      }
+
+      /** 1.5.9: a relay on this exact local port (DB Online's game port); false when the port is taken. */
+      public function listenOn(listenPort:int) : Boolean
+      {
+         var server:ServerSocket = new ServerSocket();
+         try
+         {
+            server.bind(listenPort, "127.0.0.1");
+            server.listen();
+         }
+         catch (error:Error)
+         {
+            try { server.close(); } catch (ignored:Error) {}
+            return false;
+         }
+         server.addEventListener(ServerSocketConnectEvent.CONNECT, accepter(listenPort));
+         sockets.push(server);
+         return true;
       }
 
       /** Points a reserved local port at host:port. */
@@ -456,7 +488,11 @@ package dbrevamped.relay
             {
                return null;
             }
-            var local:int = portFor(host, port);
+            var local:int = fixedEnterWorld > 0 ? fixedEnterWorld : portFor(host, port);
+            if (fixedEnterWorld > 0 && /^(127\.|localhost$)/i.test(host) && port == fixedEnterWorld)
+            {
+               return null;
+            }
             var w:BitStream = new BitStream(new ByteArray());
             w.copy(payload, 0, hostAt);
             w.writeStr("127.0.0.1");
@@ -506,7 +542,7 @@ package dbrevamped.relay
                   transport: "db-revamped-launcher-relay",
                   capturedAt: iso(new Date()),
                   client: "DB Revamped AIR",
-                  protocolProfile: "db-r-local-2026-10-22"
+                  protocolProfile: protocolProfile
                },
                character: { name: name },
                packets: list
@@ -520,6 +556,10 @@ package dbrevamped.relay
             stream.close();
             temp.moveTo(folder.resolvePath(name + ".json"), true);
             trace("[ServerRelay] kept player data for " + name);
+            if (onKept != null)
+            {
+               try { onKept(name); } catch (ignored:Error) {}
+            }
          }
          catch (error:Error)
          {

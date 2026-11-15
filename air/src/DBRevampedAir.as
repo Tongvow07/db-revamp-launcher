@@ -30,7 +30,9 @@ package
    // The relay lives in its own package: the loaded game shares this app's class names (it runs in a child
    // ApplicationDomain, where ours win), and the game has its own BitStream. 1.5.0/1.5.1 had these classes in
    // the top-level package, so the game used our BitStream and could not send its first packet.
+   import dbrevamped.relay.DboSession;
    import dbrevamped.relay.ServerRelay;
+   import flash.filesystem.File;
    import dbrevamped.relay.SwfLoginPatch;
 
    /**
@@ -58,6 +60,8 @@ package
       /** Playing on a server other than DB Revamped (isOtherServer): the game goes through ServerRelay. */
       private var otherServer:Boolean = false;
       private var relay:ServerRelay;
+      /** 1.5.9: DB Online through the relay (--dbo). */
+      private var dbo:DboSession;
 
       public function DBRevampedAir()
       {
@@ -85,12 +89,23 @@ package
          {
             return;
          }
+         var dboFolder:String = null;
          for each (var arg:String in event.arguments)
          {
             if (/^https?:\/\//i.test(arg))
             {
                page = arg;
             }
+            else if (arg == "--dbo" || arg.indexOf("--dbo=") == 0)
+            {
+               dboFolder = arg.length > 6 ? arg.substr(6) : "";
+            }
+         }
+         if (dboFolder != null)
+         {
+            started = true;
+            startDbo(dboFolder);
+            return;
          }
          if (!page)
          {
@@ -321,6 +336,45 @@ package
          relay = null;
          game.position = 0;
          return game;
+      }
+
+      /**
+       * 1.5.9: `DB Revamped.exe --dbo[=<DB Online install folder>]`: DB Online through the relay
+       * (DboSession), so its characters can be offered for transfer. This window stays small and shows
+       * what was saved; it closes with DB Online.
+       */
+      private function startDbo(folder:String) : void
+      {
+         if (stage.nativeWindow)
+         {
+            stage.nativeWindow.title = "DB Online - transfer to DB Revamped";
+            stage.nativeWindow.width = 620;
+            stage.nativeWindow.height = 220;
+         }
+         status.width = 560;
+         status.wordWrap = true;
+         status.autoSize = TextFieldAutoSize.LEFT;
+         var say:Function = function(text:String) : void
+         {
+            status.text = "DB Online for transfer\n\n" + text;
+            trace("[DBO] " + text);
+         };
+         try
+         {
+            var source:File = folder ? new File(folder) : DboSession.defaultInstall();
+            dbo = new DboSession(source);
+            dbo.start(say, function() : void
+            {
+               var names:Array = dbo.savedNames;
+               say(names.length
+                  ? "DB Online closed. Saved for transfer: " + names.join(", ") + ".\nOpen TRANSFER TO DB REVAMPED in the launcher to send one."
+                  : "DB Online closed. No character was saved: enter the world with a character to save it.");
+            });
+         }
+         catch (error:Error)
+         {
+            say(error.message);
+         }
       }
 
       /**
