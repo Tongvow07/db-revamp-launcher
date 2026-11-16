@@ -513,14 +513,13 @@ package dbrevamped.relay
       {
          try
          {
-            var r:BitStream = new BitStream(payload);
-            r.readUint(); // transfer token
-            r.readUint(); // server time
-            r.bits(2); // hp scaling
-            r.readUint(); // bonus levels
-            var name:String = r.readStr();
-            if (!/^[A-Za-z0-9]{1,24}$/.test(name))
+            // The encounter-scaling field is 2 bits on ours and 3 on DB Online (1.5.9): the layout this
+            // relay was given first, then the other, so a name is never lost to a misread width.
+            var dbo:Boolean = protocolProfile.indexOf("db-online") == 0;
+            var name:String = characterName(payload, dbo ? 3 : 2) || characterName(payload, dbo ? 2 : 3);
+            if (!name)
             {
+               trace("[ServerRelay] player data with no readable character name; not kept");
                return;
             }
             var list:Array = kept[name] || (kept[name] = []);
@@ -565,6 +564,23 @@ package dbrevamped.relay
          {
             trace("[ServerRelay] player data not kept: " + error.message);
          }
+      }
+
+      /** The character name in a player data packet whose encounter field is encounterBits wide, or null. */
+      private static function characterName(payload:ByteArray, encounterBits:int) : String
+      {
+         try
+         {
+            var r:BitStream = new BitStream(payload);
+            r.readUint(); // transfer token
+            r.readUint(); // server time
+            r.bits(encounterBits); // encounter scaling
+            r.readUint(); // bonus levels
+            var name:String = r.readStr();
+            return /^[A-Za-z0-9]{1,24}$/.test(name) ? name : null;
+         }
+         catch (error:Error) {}
+         return null;
       }
 
       /** The other server's host name, safe as a folder name. */
