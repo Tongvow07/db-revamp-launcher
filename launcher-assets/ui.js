@@ -164,9 +164,9 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     '<div class="fps" id="qualityBox">',
     '<label class="dbui-label">GRAPHICS</label>',
     '<div class="engine-row">',
-    button('<span class="dbui-radio"></span>High','dbSetQuality(\'high\')','slate','qualityhigh','dbui-btn-small engine-opt'),
-    button('<span class="dbui-radio"></span>Medium','dbSetQuality(\'medium\')','slate','qualitymedium','dbui-btn-small engine-opt'),
-    button('<span class="dbui-radio"></span>Low','dbSetQuality(\'low\')','slate','qualitylow','dbui-btn-small engine-opt'),
+    button('<span class="dbui-radio"></span>High','dbSetQuality(\'high\')','slate','qualityhigh','dbui-btn-small engine-opt fps-opt'),
+    button('<span class="dbui-radio"></span>Medium','dbSetQuality(\'medium\')','slate','qualitymedium','dbui-btn-small engine-opt fps-opt'),
+    button('<span class="dbui-radio"></span>Low','dbSetQuality(\'low\')','slate','qualitylow','dbui-btn-small engine-opt fps-opt'),
     '</div>',
     '</div>',
     '<div class="fps" id="screenBox">',
@@ -356,7 +356,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   var QUALITY_CHOICES=['high','medium','low'];
   function loadQuality(){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(QUALITY_FILE&&fso.FileExists(QUALITY_FILE)){ var ts=fso.OpenTextFile(QUALITY_FILE,1,false); var v=ts.ReadAll().replace(/\s+/g,'').toLowerCase(); ts.Close(); for(var i=0;i<QUALITY_CHOICES.length;i++) if(QUALITY_CHOICES[i]==v) return v; } }catch(e){} return 'high'; }
   function saveQuality(v){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!fso.FolderExists(SESSION_DIR)) fso.CreateFolder(SESSION_DIR); var ts=fso.CreateTextFile(QUALITY_FILE,true); ts.Write(String(v)); ts.Close(); }catch(e){} }
-  function showQuality(){ var q=loadQuality(), opt='dbui-btn dbui-btn-small engine-opt', lit=' dbui-on', dim=' dbui-btn-slate';
+  function showQuality(){ var q=loadQuality(), opt='dbui-btn dbui-btn-small engine-opt fps-opt', lit=' dbui-on', dim=' dbui-btn-slate';
     for(var i=0;i<QUALITY_CHOICES.length;i++){ var b=$('quality'+QUALITY_CHOICES[i]); if(!b) continue;
       b.title=QUALITY_CHOICES[i]=='high'?'Smoothest edges':(QUALITY_CHOICES[i]=='medium'?'Faster on slower PCs':'Fastest; rougher edges'); b.className=opt+(QUALITY_CHOICES[i]==q?lit:dim); } }
   window.dbSetQuality=function(v){ for(var i=0;i<QUALITY_CHOICES.length;i++) if(QUALITY_CHOICES[i]==v){ saveQuality(v); showQuality(); return; } };
