@@ -15,7 +15,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   var HEALTH=SECURE_HOST+"/api/auth/discord/config";
   /* This launcher's version (the installer's AppVersion; dbui\build.js --verify checks they match) and
      where the newest one is announced. */
-  var LAUNCHER_VERSION="1.5.9";
+  var LAUNCHER_VERSION="1.6.0";
   var LATEST=SECURE_HOST+"/download/launcher.json";
   var SETUP_URL=SECURE_HOST+"/download/DB-Revamped-Setup.exe";
   var API_CREATE=SECURE_HOST+"/api/account/create";
@@ -159,6 +159,14 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     button('<span class="dbui-radio"></span>100 fps','dbSetFps(100)','slate','fps100','dbui-btn-small engine-opt fps-opt'),
     button('<span class="dbui-radio"></span>144 fps','dbSetFps(144)','slate','fps144','dbui-btn-small engine-opt fps-opt'),
     button('<span class="dbui-radio"></span>240 fps','dbSetFps(240)','slate','fps240','dbui-btn-small engine-opt fps-opt'),
+    '</div>',
+    '</div>',
+    '<div class="fps" id="qualityBox">',
+    '<label class="dbui-label">GRAPHICS</label>',
+    '<div class="engine-row">',
+    button('<span class="dbui-radio"></span>High','dbSetQuality(\'high\')','slate','qualityhigh','dbui-btn-small engine-opt'),
+    button('<span class="dbui-radio"></span>Medium','dbSetQuality(\'medium\')','slate','qualitymedium','dbui-btn-small engine-opt'),
+    button('<span class="dbui-radio"></span>Low','dbSetQuality(\'low\')','slate','qualitylow','dbui-btn-small engine-opt'),
     '</div>',
     '</div>',
     '<div class="fps" id="screenBox">',
@@ -325,7 +333,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     a.disabled=!air; a.title=air?'Up to 240 fps':'The AIR engine is not installed; run the installer again';
     var opt='dbui-btn dbui-btn-small engine-opt', lit=' dbui-on', dim=' dbui-btn-slate'; a.className=opt+(on?lit:dim); f.className=opt+(on?dim:lit);
     if(h) h.innerHTML=(air?'':'AIR is not installed here, so Play uses Classic Flash. ')+(on?'':'Classic Flash runs at up to 60 fps; the frame rate applies to AIR. ')+'The game itself is downloaded from the server at every start, so both engines run the latest version with every patch.';
-    showFps(on); showScreen(on); }
+    showFps(on); showScreen(on); showQuality(); }
   window.dbSetEngine=function(which){ if(which=='air'&&!hasAir()) return; saveEngine(which=='flash'?'flash':'air'); showEngine(); fitPanel(); };
 
   /* The frame rate the AIR engine aims for: 100 (the game's own target), 144 or 240, remembered in
@@ -339,6 +347,19 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     for(var i=0;i<FPS_CHOICES.length;i++){ var b=$('fps'+FPS_CHOICES[i]); if(!b) continue;
       b.disabled=!air; b.title=air?'':'For the AIR engine'; b.className=opt+(air&&FPS_CHOICES[i]==fps?lit:dim); } }
   window.dbSetFps=function(v){ if(!useAir()) return; saveFps(v); showFps(true); };
+
+  /* 1.6.0: how smoothly the game draws its edges. High is the game's own setting; Medium and Low draw
+     edges with less smoothing, which costs a slower PC far less time per frame (the game draws on one
+     CPU core). Remembered in quality.txt and passed as dbQuality (FramePace.as applies low / medium /
+     high). Both engines read it; nothing is passed for High. */
+  var QUALITY_FILE=SESSION_DIR?SESSION_DIR+'\\quality.txt':null;
+  var QUALITY_CHOICES=['high','medium','low'];
+  function loadQuality(){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(QUALITY_FILE&&fso.FileExists(QUALITY_FILE)){ var ts=fso.OpenTextFile(QUALITY_FILE,1,false); var v=ts.ReadAll().replace(/\s+/g,'').toLowerCase(); ts.Close(); for(var i=0;i<QUALITY_CHOICES.length;i++) if(QUALITY_CHOICES[i]==v) return v; } }catch(e){} return 'high'; }
+  function saveQuality(v){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!fso.FolderExists(SESSION_DIR)) fso.CreateFolder(SESSION_DIR); var ts=fso.CreateTextFile(QUALITY_FILE,true); ts.Write(String(v)); ts.Close(); }catch(e){} }
+  function showQuality(){ var q=loadQuality(), opt='dbui-btn dbui-btn-small engine-opt', lit=' dbui-on', dim=' dbui-btn-slate';
+    for(var i=0;i<QUALITY_CHOICES.length;i++){ var b=$('quality'+QUALITY_CHOICES[i]); if(!b) continue;
+      b.title=QUALITY_CHOICES[i]=='high'?'Smoothest edges':(QUALITY_CHOICES[i]=='medium'?'Faster on slower PCs':'Fastest; rougher edges'); b.className=opt+(QUALITY_CHOICES[i]==q?lit:dim); } }
+  window.dbSetQuality=function(v){ for(var i=0;i<QUALITY_CHOICES.length;i++) if(QUALITY_CHOICES[i]==v){ saveQuality(v); showQuality(); return; } };
 
   /* The display the AIR engine opens in: Windowed full screen (the default since 1.5.6; since 1.5.7 a
      maximised window with its title bar on screen, sent as dbScreen=maximized. 1.5.6 sent "borderless",
@@ -427,6 +448,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
         registerGame(slot,'dbrevamped',r.email);
         if(useAir()&&loadFps()!=100) url+='&dbFps='+loadFps();
         if(useAir()&&loadScreen()!='full') url+='&dbScreen='+screenParam();
+        if(loadQuality()!='high') url+='&dbQuality='+loadQuality();
         relaunching=false;
         try{ new ActiveXObject('WScript.Shell').Run('"'+exe+'" "'+url+'"',1,false); setMsg('The game is opening - you are signed in.'); awaitingGame=true; }
         catch(e){ comeBack(); setMsg('Could not start the game: '+e.message,true); }
