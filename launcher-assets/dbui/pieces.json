@@ -1072,6 +1072,34 @@
         20
       ],
       "sha256": "090af32fe7b71073b370e51d64ad4aa42fa1a13cbd18d4ca9b70c915c47852da"
+    },
+    {
+      "file": "dbui/pill-on.png",
+      "what": "the dark stat plate (GameUi.Matte) lit warm and gold: a chosen row",
+      "source": {
+        "swf": "caa/UI_Library.swf",
+        "symbol": "_DoodadStatMatte01",
+        "id": 956,
+        "frame": 1,
+        "tint": {
+          "r": 1.25,
+          "g": 1.18,
+          "b": 0.9,
+          "ro": 22,
+          "go": 16,
+          "bo": 0
+        }
+      },
+      "scale": 2,
+      "width": 171,
+      "height": 53,
+      "slice": [
+        0,
+        20,
+        0,
+        20
+      ],
+      "sha256": "fb11d73155848a78a9eccda2c5ca3994d3b425a82f77389e04a704bc5fa2eadc"
     }
   ],
   "fonts": [

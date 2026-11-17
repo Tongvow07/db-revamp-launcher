@@ -6,6 +6,11 @@
 ; Installs per user (no admin prompt) into %LOCALAPPDATA%\DB Revamped, with a Start Menu entry,
 ; an optional desktop shortcut and an entry in Settings > Apps for uninstalling.
 ;
+; 1.6.0 (2026-11-17): GRAPHICS (High / Medium / Low), sent as dbQuality and applied by the game's FramePace:
+;        Medium and Low draw edges with less smoothing, which a slower PC (the game draws on one CPU core) feels
+;        most. Welcome Back fills a wider panel (owner, 2026-11-17): the account plate and a tall PLAY across the
+;        top, ENGINE / FRAME RATE / GRAPHICS / DISPLAY as rounded choice rows in gold-rimmed groups, Minesa and
+;        transfer side by side under them; Sign out sits on the account plate.
 ; 1.5.8 (2026-11-14): PLAY ON THIS SERVER reaches servers whose game socket is a WebSocket only. A server run on
 ;        someone's PC behind a web tunnel (Cloudflare quick tunnels carry web traffic only) gives its game the login
 ;        address localhost, and its /web page tells Ruffle to use a ws:// or wss:// address instead (socketProxy). The

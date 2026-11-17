@@ -73,21 +73,32 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     ".file-input{position:absolute;left:-9999px;width:1px;height:1px}",
     ".file-hint{display:block;margin-top:.3em;text-align:center;font-size:.66em;line-height:1.3em}",
     ".file-name{display:block;margin-top:.25em;text-align:center;font-size:.74em;line-height:1.25em;word-wrap:break-word;min-height:1.25em}",
-    /* The engine choice on the Play view: two buttons, the chosen one gold with its radio ticked. */
-    ".engine{margin-top:.45em}",
-    ".engine .dbui-label{margin-top:0}",
-    ".engine-row{overflow:hidden}",
-    ".engine-opt{float:left;width:48.5%;margin:0}",
-    ".engine-opt+.engine-opt{margin-left:3%}",
-    ".engine-opt .dbui-btn-text{font-size:.7em;line-height:2.714em;white-space:nowrap}",
-    ".engine-opt .dbui-radio{width:1.55em;height:1.55em;margin:-.25em .3em 0 0}",
+    /* 1.6.0: Welcome Back fills a wider panel (owner, 2026-11-17: "make use of more space"): the account
+       plate and a tall PLAY across the top, the four settings as rows of choices in gold-rimmed groups, the
+       other-server buttons side by side under them. Tables and floats, as IE11 has no flex gaps. */
+    ".panel.wide{left:17%;width:66%}",
+    ".si-top{display:table;width:100%;table-layout:fixed;margin-top:.15em}",
+    ".si-acct{display:table-cell;vertical-align:middle}",
+    ".si-play{display:table-cell;vertical-align:middle;width:36%;padding-left:1em}",
+    ".si-play .dbui-btn{margin:0}",
+    ".si-plate{display:block;height:3.5em}",
+    ".si-row{display:table;width:100%;height:100%;table-layout:fixed}",
+    ".si-dot{display:table-cell;vertical-align:middle;width:1.7em}",
+    ".si-dot .dbui-dot{width:1em;height:1em;margin:0}",
+    ".si-who{display:table-cell;vertical-align:middle;font-size:.8em;line-height:1.35em;overflow:hidden}",
+    ".si-who b{display:block;font-size:1.25em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+    ".si-links{display:table-cell;vertical-align:middle;width:10.5em;text-align:right;font-size:.72em;line-height:1.6em;white-space:nowrap}",
+    ".si-switch{margin:.35em 0 0;text-align:center;font-size:.7em;line-height:1.35em}",
+    ".si-groups{overflow:hidden;margin-top:.35em;padding-top:1.1em}",
+    ".si-group{float:left;width:20.6%;height:11.2em}",
+    ".si-group+.si-group{margin-left:1.73%}",
+    ".si-group.si-engine{width:24.2%}",
+    ".si-group.si-wide{width:29.4%}",
+    ".si-hint{margin-top:.5em;text-align:center;font-size:.64em;line-height:1.3em}",
+    ".si-foot{overflow:hidden;margin-top:.7em}",
+    ".si-foot .dbui-btn{float:left;width:48.5%;margin:0}",
+    ".si-foot .dbui-btn+.dbui-btn{margin-left:3%}",
     ".engine-hint{margin-top:.3em;text-align:center;font-size:.64em;line-height:1.3em}",
-    /* The frame rate under it: three buttons the same way, for the AIR engine only. */
-    ".fps{margin-top:.35em}",
-    ".fps-opt{float:left;width:31.33%;margin:0}",
-    ".fps-opt+.fps-opt{margin-left:3%}",
-    /* 1.5.6: DISPLAY has four choices, two to a row. */
-    ".engine-row+.engine-row{margin-top:.3em}",
     ".transfer-btn{margin-top:.55em}",
     /* 1.5.0: other servers (Minesa, DB Online, any address) and the characters captured there for transfer. */
     ".other-btn{margin-top:.4em}",
@@ -100,13 +111,15 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     ".update{margin-bottom:.45em}",
     /* While a request runs the buttons wait; the AIR choice greys out when AIR is not installed. */
     ".panel .dbui-btn[disabled]{cursor:wait}",
-    ".panel .engine-opt[disabled]{cursor:default;opacity:.5}",
-    ".panel .fps-opt[disabled]{cursor:default;opacity:.5}"
+    ".panel .dbui-opt[disabled]{cursor:default}"
   ].join("\n");
 
   /* Markup helpers for the kit's field and buttons. */
   function field(id,type,extra){ return '<span class="dbui-field"><span class="dbui-field-rim"></span><input class="dbui-input" id="'+id+'" type="'+type+'" autocomplete="off"'+(extra||'')+'></span>'; }
   function button(label,onclick,role,id,cls){ return '<button type="button" class="dbui-btn'+(role?' dbui-btn-'+role:'')+(cls?' '+cls:'')+'"'+(id?' id="'+id+'"':'')+' onclick="'+onclick+'"><span class="dbui-btn-art"></span><span class="dbui-btn-text">'+label+'</span></button>'; }
+  /* 1.6.0: a choice row and a gold-rimmed group of them (dbui-opt, dbui-group). */
+  function choice(label,onclick,id){ return '<button type="button" class="dbui-opt" id="'+id+'" onclick="'+onclick+'"><span class="dbui-radio"></span>'+label+'</button>'; }
+  function group(name,rows,cls){ return '<div class="dbui-group si-group'+(cls?' '+cls:'')+'"><span class="dbui-group-rim"></span><div class="dbui-group-cap"><span class="dbui-pill">'+name+'</span></div>'+rows+'</div>'; }
   var html=[
     '<div class="launcher-stage dbui" id="stage">',
     '<div class="server-pill dbui-pill"><span class="dbui-dot" id="statusDot"></span><span id="statusText">checking...</span></div>',
@@ -141,49 +154,26 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     '</form>',
     /* Signed in */
     '<div class="view" id="view-signedin">',
-    '<div class="who">Signed in as<b id="whoEmail"></b></div>',
-    '<div class="accounts" id="accountList"></div>',
-    '<div class="msg dbui-msg" id="msg-signedin" style="margin-top:0"></div>',
-    button('PLAY','dbPlay()','','playBtn'),
-    button('SIGN OUT','dbSignOut()','copper'),
-    /* The engine Play starts. Both load the game from the server, so there is nothing to update. */
-    '<div class="engine" id="engineBox">',
-    '<label class="dbui-label">ENGINE</label>',
-    '<div class="engine-row">',
-    button('<span class="dbui-radio"></span>Smooth engine (AIR)','dbSetEngine(\'air\')','slate','engineAir','dbui-btn-small engine-opt'),
-    button('<span class="dbui-radio"></span>Classic Flash','dbSetEngine(\'flash\')','slate','engineFlash','dbui-btn-small engine-opt'),
+    '<div class="si-top"><div class="si-acct"><div class="dbui-plate si-plate"><div class="si-row">',
+    '<span class="si-dot"><span class="dbui-dot dbui-on"></span></span>',
+    '<span class="si-who dbui-dim">Signed in as<b id="whoEmail"></b></span>',
+    '<span class="si-links"><span class="dbui-link" onclick="dbAddAccount()">Add another account</span><br><span class="dbui-link" onclick="dbSignOut()">Sign out</span></span>',
+    '</div></div></div>',
+    '<div class="si-play">'+button('PLAY','dbPlay()','','playBtn','dbui-btn-big')+'</div></div>',
+    '<div class="si-switch" id="accountList" style="display:none"></div>',
+    '<div class="msg dbui-msg" id="msg-signedin"></div>',
+    /* The engine Play starts, and for AIR its frame rate and display; the graphics quality for both. */
+    '<div class="si-groups" id="engineBox">',
+    group('ENGINE',choice('Smooth (AIR)','dbSetEngine(\'air\')','engineAir')+choice('Classic Flash','dbSetEngine(\'flash\')','engineFlash'),'si-engine'),
+    group('FRAME RATE',choice('100 fps','dbSetFps(100)','fps100')+choice('144 fps','dbSetFps(144)','fps144')+choice('240 fps','dbSetFps(240)','fps240')),
+    group('GRAPHICS',choice('High','dbSetQuality(\'high\')','qualityhigh')+choice('Medium','dbSetQuality(\'medium\')','qualitymedium')+choice('Low','dbSetQuality(\'low\')','qualitylow')),
+    group('DISPLAY',choice('Windowed full screen','dbSetScreen(\'borderless\')','screenBorderless')+choice('Full screen','dbSetScreen(\'full\')','screenFull')+choice('1600 x 900','dbSetScreen(\'1600x900\')','screen1600x900')+choice('1280 x 720','dbSetScreen(\'1280x720\')','screen1280x720'),'si-wide'),
     '</div>',
-    '<div class="fps" id="fpsBox">',
-    '<label class="dbui-label">FRAME RATE</label>',
-    '<div class="engine-row">',
-    button('<span class="dbui-radio"></span>100 fps','dbSetFps(100)','slate','fps100','dbui-btn-small engine-opt fps-opt'),
-    button('<span class="dbui-radio"></span>144 fps','dbSetFps(144)','slate','fps144','dbui-btn-small engine-opt fps-opt'),
-    button('<span class="dbui-radio"></span>240 fps','dbSetFps(240)','slate','fps240','dbui-btn-small engine-opt fps-opt'),
+    '<div class="si-hint dbui-dim" id="engineHint"></div>',
+    '<div class="si-foot">',
+    button('PLAY ON MINESA OR ANOTHER SERVER','dbShow(\'servers\')','slate','','dbui-btn-small'),
+    button('TRANSFER CHARACTERS HERE','dbShow(\'transfer\')','copper','','dbui-btn-small'),
     '</div>',
-    '</div>',
-    '<div class="fps" id="qualityBox">',
-    '<label class="dbui-label">GRAPHICS</label>',
-    '<div class="engine-row">',
-    button('<span class="dbui-radio"></span>High','dbSetQuality(\'high\')','slate','qualityhigh','dbui-btn-small engine-opt fps-opt'),
-    button('<span class="dbui-radio"></span>Medium','dbSetQuality(\'medium\')','slate','qualitymedium','dbui-btn-small engine-opt fps-opt'),
-    button('<span class="dbui-radio"></span>Low','dbSetQuality(\'low\')','slate','qualitylow','dbui-btn-small engine-opt fps-opt'),
-    '</div>',
-    '</div>',
-    '<div class="fps" id="screenBox">',
-    '<label class="dbui-label">DISPLAY</label>',
-    '<div class="engine-row">',
-    button('<span class="dbui-radio"></span>Windowed full screen','dbSetScreen(\'borderless\')','slate','screenBorderless','dbui-btn-small engine-opt'),
-    button('<span class="dbui-radio"></span>Full screen','dbSetScreen(\'full\')','slate','screenFull','dbui-btn-small engine-opt'),
-    '</div>',
-    '<div class="engine-row">',
-    button('<span class="dbui-radio"></span>1600 x 900','dbSetScreen(\'1600x900\')','slate','screen1600x900','dbui-btn-small engine-opt'),
-    button('<span class="dbui-radio"></span>1280 x 720','dbSetScreen(\'1280x720\')','slate','screen1280x720','dbui-btn-small engine-opt'),
-    '</div>',
-    '</div>',
-    '<div class="engine-hint dbui-dim" id="engineHint"></div>',
-    '</div>',
-    button('PLAY ON MINESA OR ANOTHER SERVER','dbShow(\'servers\')','slate','','other-btn'),
-    button('Played on Minesa or another server? Transfer your characters to this account.','dbShow(\'transfer\')','slate','','dbui-btn-multi transfer-btn'),
     '</div>',
     /* Transfer: send a save file for the staff to review. Three kinds are accepted (the server
        normalizes all three): the account export, the character save and the packets capture. */
@@ -249,6 +239,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     var names=['signin','register','signedin','transfer','servers'];
     for(var i=0;i<names.length;i++){ var v=$('view-'+names[i]); if(v) v.className=(names[i]==name)?'view active':'view'; }
     $('panelTitle').innerHTML=TITLES[name];
+    $('panel').className='panel dbui-window'+(name=='signedin'?' wide':'');
     setMsg('');
     if(name=='signedin'&&session){ $('whoEmail').innerHTML=esc(session.email); showEngine(); showAccounts(); }
     if(name=='signin'){ var b=$('backToAccounts'); if(b) b.style.display=session?'':'none'; }
@@ -331,7 +322,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   function showEngine(){ var a=$('engineAir'), f=$('engineFlash'), h=$('engineHint'); if(!a||!f) return;
     var air=hasAir(), on=useAir();
     a.disabled=!air; a.title=air?'Up to 240 fps':'The AIR engine is not installed; run the installer again';
-    var opt='dbui-btn dbui-btn-small engine-opt', lit=' dbui-on', dim=' dbui-btn-slate'; a.className=opt+(on?lit:dim); f.className=opt+(on?dim:lit);
+    var opt='dbui-opt', lit=' dbui-on', dim=''; a.className=opt+(on?lit:dim); f.className=opt+(on?dim:lit);
     if(h) h.innerHTML=(air?'':'AIR is not installed here, so Play uses Classic Flash. ')+(on?'':'Classic Flash runs at up to 60 fps; the frame rate applies to AIR. ')+'The game itself is downloaded from the server at every start, so both engines run the latest version with every patch.';
     showFps(on); showScreen(on); showQuality(); }
   window.dbSetEngine=function(which){ if(which=='air'&&!hasAir()) return; saveEngine(which=='flash'?'flash':'air'); showEngine(); fitPanel(); };
@@ -343,7 +334,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   var FPS_CHOICES=[100,144,240];
   function loadFps(){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(FPS_FILE&&fso.FileExists(FPS_FILE)){ var ts=fso.OpenTextFile(FPS_FILE,1,false); var v=parseInt(ts.ReadAll(),10); ts.Close(); for(var i=0;i<FPS_CHOICES.length;i++) if(FPS_CHOICES[i]==v) return v; } }catch(e){} return 100; }
   function saveFps(v){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!fso.FolderExists(SESSION_DIR)) fso.CreateFolder(SESSION_DIR); var ts=fso.CreateTextFile(FPS_FILE,true); ts.Write(String(v)); ts.Close(); }catch(e){} }
-  function showFps(air){ var fps=loadFps(), opt='dbui-btn dbui-btn-small engine-opt fps-opt', lit=' dbui-on', dim=' dbui-btn-slate';
+  function showFps(air){ var fps=loadFps(), opt='dbui-opt', lit=' dbui-on', dim='';
     for(var i=0;i<FPS_CHOICES.length;i++){ var b=$('fps'+FPS_CHOICES[i]); if(!b) continue;
       b.disabled=!air; b.title=air?'':'For the AIR engine'; b.className=opt+(air&&FPS_CHOICES[i]==fps?lit:dim); } }
   window.dbSetFps=function(v){ if(!useAir()) return; saveFps(v); showFps(true); };
@@ -356,7 +347,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   var QUALITY_CHOICES=['high','medium','low'];
   function loadQuality(){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(QUALITY_FILE&&fso.FileExists(QUALITY_FILE)){ var ts=fso.OpenTextFile(QUALITY_FILE,1,false); var v=ts.ReadAll().replace(/\s+/g,'').toLowerCase(); ts.Close(); for(var i=0;i<QUALITY_CHOICES.length;i++) if(QUALITY_CHOICES[i]==v) return v; } }catch(e){} return 'high'; }
   function saveQuality(v){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!fso.FolderExists(SESSION_DIR)) fso.CreateFolder(SESSION_DIR); var ts=fso.CreateTextFile(QUALITY_FILE,true); ts.Write(String(v)); ts.Close(); }catch(e){} }
-  function showQuality(){ var q=loadQuality(), opt='dbui-btn dbui-btn-small engine-opt fps-opt', lit=' dbui-on', dim=' dbui-btn-slate';
+  function showQuality(){ var q=loadQuality(), opt='dbui-opt', lit=' dbui-on', dim='';
     for(var i=0;i<QUALITY_CHOICES.length;i++){ var b=$('quality'+QUALITY_CHOICES[i]); if(!b) continue;
       b.title=QUALITY_CHOICES[i]=='high'?'Smoothest edges':(QUALITY_CHOICES[i]=='medium'?'Faster on slower PCs':'Fastest; rougher edges'); b.className=opt+(QUALITY_CHOICES[i]==q?lit:dim); } }
   window.dbSetQuality=function(v){ for(var i=0;i<QUALITY_CHOICES.length;i++) if(QUALITY_CHOICES[i]==v){ saveQuality(v); showQuality(); return; } };
@@ -379,7 +370,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   /* What dbScreen carries for the saved choice: 'maximized' for Windowed full screen, else the WxH. */
   function screenParam(){ var v=loadScreen(); return v=='borderless'?'maximized':v; }
   function saveScreen(v){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!fso.FolderExists(SESSION_DIR)) fso.CreateFolder(SESSION_DIR); var ts=fso.CreateTextFile(SCREEN_FILE,true); ts.Write(v); ts.Close(); }catch(e){} }
-  function showScreen(air){ var cur=loadScreen(), opt='dbui-btn dbui-btn-small engine-opt', lit=' dbui-on', dim=' dbui-btn-slate';
+  function showScreen(air){ var cur=loadScreen(), opt='dbui-opt', lit=' dbui-on', dim='';
     for(var i=0;i<SCREEN_CHOICES.length;i++){ var v=SCREEN_CHOICES[i], b=$(SCREEN_IDS[v]||'screen'+v); if(!b) continue; var fits=screenFits(v);
       b.disabled=!air||!fits; b.title=!air?'For the AIR engine':(fits?'':'Larger than this screen'); b.className=opt+(air&&v==cur?lit:dim); } }
   window.dbSetScreen=function(v){ if(!useAir()||!screenFits(v)) return; saveScreen(v); showScreen(true); };
@@ -666,7 +657,7 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
   function findAccount(email){ var list=loadAccounts(); for(var i=0;i<list.length;i++) if(list[i].email==email) return list[i]; return null; }
   function showAccounts(){ var box=$('accountList'); if(!box) return; var list=loadAccounts(), h=[];
     for(var i=0;i<list.length;i++) if(!session||list[i].email!=session.email) h.push('<span class="dbui-link" onclick="dbSwitchAccount('+i+')">'+esc(list[i].email)+'</span>');
-    box.innerHTML=(h.length?'Switch to: '+h.join(' &middot; ')+'<br>':'')+'<span class="dbui-link" onclick="dbAddAccount()">Add another account</span> &middot; <span class="dbui-link" onclick="dbShow(\'servers\')">Other servers</span>'; }
+    box.innerHTML=h.length?'Switch to: '+h.join(' &middot; '):''; box.style.display=h.length?'':'none'; }
   window.dbSwitchAccount=function(i){ var list=loadAccounts(); if(!list[i]) return; session=list[i]; saveSession(session); dbShow('signedin'); setMsg('Press Play to start a game as '+esc(session.email)+'. Games already open keep running.'); };
   window.dbAddAccount=function(){ $('signinEmail').value=''; $('signinPassword').value=''; dbShow('signin'); setMsg('Sign in with another account. Your other accounts stay signed in.'); };
 

@@ -261,6 +261,12 @@ const PIECES = [
         name: 'stone', what: 'the cracked stone slab of the game\'s windows (_WindowBaseOldStone02)',
         swf: 'UI_Library', symbol: '_WindowBaseOldStone02', frame: 1, kind: 'symbol', scale: 1,
         slice: [20, 20, 20, 20]
+    },
+    // The stat plate lit warm and gold: the chosen row of a .dbui-opt list (launcher 1.6.0).
+    {
+        name: 'pill-on', what: 'the dark stat plate (GameUi.Matte) lit warm and gold: a chosen row',
+        swf: 'UI_Library', symbol: '_DoodadStatMatte01', frame: 1, kind: 'symbol',
+        slice: [0, 10, 0, 10], tint: { r: 1.25, g: 1.18, b: 0.9, ro: 22, go: 16, bo: 0 }
     }
 ];
 
@@ -583,18 +589,37 @@ function pruneSvg(svg, keep, scale, keepPaths, keepSubpath) {
     return { svg: sized, width: pixelsW, height: pixelsH, dropped: uses.length - keptUses, kept: keptUses };
 }
 
+let drawCount = 0;
+
 /** Edge draws `svgFile` at its own size on a transparent page and saves the PNG. */
 function drawWithEdge(svgFile, width, height, outFile, temp) {
     const page = svgFile.replace(/\.svg$/, '.html');
     fs.writeFileSync(page, `<!DOCTYPE html><html><head><style>html,body{margin:0;padding:0;background:transparent;overflow:hidden}img{display:block}</style></head>` +
         `<body><img src="${path.basename(svgFile)}" width="${width}" height="${height}"></body></html>`);
-    execFileSync(EDGE, [
-        '--headless=new', '--disable-gpu', '--hide-scrollbars', '--no-first-run', '--disable-extensions',
-        '--force-device-scale-factor=1', '--default-background-color=00000000',
-        `--user-data-dir=${path.join(temp, 'edge-profile')}`,
-        `--window-size=${width},${height}`, `--screenshot=${outFile}`,
-        'file:///' + page.replace(/\\/g, '/')
-    ], { stdio: ['ignore', 'pipe', 'pipe'] });
+    // Headless Edge sometimes hangs or writes nothing (2026-11-17: a whole export stalled on one
+    // picture). Each try gets a minute and its own profile, so a stuck one cannot block the next.
+    for (let attempt = 1; ; attempt++) {
+        fs.rmSync(outFile, { force: true });
+        try {
+            execFileSync(EDGE, [
+                '--headless=new', '--disable-gpu', '--hide-scrollbars', '--no-first-run', '--disable-extensions',
+                '--force-device-scale-factor=1', '--default-background-color=00000000',
+                `--user-data-dir=${path.join(temp, `edge-profile-${process.pid}-${drawCount++}`)}`,
+                `--window-size=${width},${height}`, `--screenshot=${outFile}`,
+                'file:///' + page.replace(/\\/g, '/')
+            ], { stdio: ['ignore', 'pipe', 'pipe'], timeout: 60000 });
+        } catch (error) {
+            if (attempt >= 3) {
+                throw error;
+            }
+        }
+        if (fs.existsSync(outFile)) {
+            break;
+        }
+        if (attempt >= 3) {
+            throw new Error(`Edge drew nothing for ${svgFile}`);
+        }
+    }
     const image = png.read(fs.readFileSync(outFile));
     if (image.width !== width || image.height !== height) {
         throw new Error(`Edge drew ${image.width}x${image.height}, wanted ${width}x${height}`);

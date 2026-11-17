@@ -24,7 +24,14 @@
                        <span class="dbui-btn-text">LABEL</span></button>; the game's Login button
                      with its own Over and Click frames. Roles: gold (the default: the button as
                      the game has it), .dbui-btn-slate, .dbui-btn-copper. Sizes: .dbui-btn-small,
-                     .dbui-btn-multi (wrapping text, grows with it). [disabled] shows the Click frame.
+                     .dbui-btn-multi (wrapping text, grows with it). [disabled] shows the Click frame;
+                     .dbui-btn-big a tall one (its corners grow with it; gold lettering).
+   .dbui-plate       a rounded box (the stat plate) round a line or two of text
+   .dbui-opt         a choice row: <button class="dbui-opt"><span class="dbui-radio"></span>Label</button>;
+                     the stat plate, lit gold with .dbui-on (its radio ticked); [disabled] fades it
+   .dbui-group       a set of rows in the field's gold rim: <div class="dbui-group"><span
+                       class="dbui-group-rim"></span><div class="dbui-group-cap"><span
+                       class="dbui-pill">NAME</span></div>...rows...</div>
    .dbui-link        a text link: cyan, lighter under the pointer (the sign-in window's
                      "Forgot your password?")
    .dbui-check       a square check box (the Options window's); .dbui-radio a round one (the sign-in
@@ -87,6 +94,25 @@
 .dbui-btn-multi{height:auto}
 .dbui-btn-multi .dbui-btn-text{padding:.75em 1.4em;font-size:.7em;line-height:1.3em;letter-spacing:0;white-space:normal}
 
+/* A tall button (the launcher's PLAY): the corners grow with the height so the art keeps its shape. */
+.dbui-btn-big{height:3.5em}
+.dbui-btn-big .dbui-btn-art{border-width:1.43em 1.62em}
+.dbui-btn-big .dbui-btn-text{font-size:1.75em;line-height:2em;letter-spacing:.16em;color:#fdf399}
+
+/* Plate: the stat plate as a rounded box for a line or two of text. Choice rows: one plate per choice,
+   a radio at its left; the chosen one (.dbui-on) lit gold. Group: the field's gold rim round a set of
+   rows, its name on a plate over the top edge. */
+.dbui-plate{border-style:solid;border-width:0 1.15em;border-image:url('pill.png') 0 20 0 20 fill stretch}
+.dbui-opt{position:relative;display:block;width:100%;height:2.2em;margin:.3em 0 0;padding:0 .1em;border-style:solid;border-width:0 .78em;border-image:url('pill.png') 0 20 0 20 fill stretch;background:transparent;cursor:pointer;outline:none;overflow:hidden;font-family:'DB Game UI',Arial,sans-serif;font-weight:normal;font-size:.84em;color:#eee2bc;text-shadow:inherit;text-align:left;white-space:nowrap}
+.dbui-opt .dbui-radio{width:1.35em;height:1.35em;margin:0 .45em .1em 0}
+.dbui-opt:hover{color:#ffffff}
+.dbui-opt.dbui-on{border-image:url('pill-on.png') 0 20 0 20 fill stretch;color:#fdf399}
+.dbui-opt[disabled]{cursor:default;color:#eee2bc;opacity:.45}
+.dbui-group{position:relative;padding:1.5em .75em .8em}
+.dbui-group-rim{position:absolute;left:0;top:0;right:0;bottom:0;border-style:solid;border-width:.94em;border-image:url('field.png') 40 40 40 40 stretch}
+.dbui-group-cap{position:absolute;left:0;right:0;top:-.85em;text-align:center}
+.dbui-group-cap .dbui-pill{height:1.6em;line-height:1.6em;padding:0 .5em;font-size:.82em;color:#0099cc}
+
 /* Link */
 .dbui-link{color:#0099cc;cursor:pointer}
 .dbui-link:hover{color:#00ccff}
@@ -129,4 +155,4 @@
 .dbui-logo{display:inline-block;width:9.4em;height:4.15em;vertical-align:middle;background:url('logo-letters.png') no-repeat center;background-size:100% 100%}
 
 /* Loaded up front so a hover or a tick never shows an empty picture. */
-.dbui-preload{position:absolute;left:-200px;top:-200px;width:1px;height:1px;overflow:hidden;background-image:url('button-over.png'),url('button-click.png'),url('button-copper-over.png'),url('button-copper-click.png'),url('button-slate-over.png'),url('button-slate-click.png'),url('radio-over.png'),url('radio-on.png'),url('radio-on-over.png'),url('check-on.png'),url('dot-on.png'),url('menu-item-over.png'),url('hover-rim.png')}
+.dbui-preload{position:absolute;left:-200px;top:-200px;width:1px;height:1px;overflow:hidden;background-image:url('button-over.png'),url('button-click.png'),url('button-copper-over.png'),url('button-copper-click.png'),url('button-slate-over.png'),url('button-slate-click.png'),url('radio-over.png'),url('radio-on.png'),url('radio-on-over.png'),url('check-on.png'),url('dot-on.png'),url('pill-on.png'),url('menu-item-over.png'),url('hover-rim.png')}
