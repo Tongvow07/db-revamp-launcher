@@ -90,10 +90,9 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     ".si-links{display:table-cell;vertical-align:middle;width:10.5em;text-align:right;font-size:.72em;line-height:1.6em;white-space:nowrap}",
     ".si-switch{margin:.35em 0 0;text-align:center;font-size:.7em;line-height:1.35em}",
     ".si-groups{overflow:hidden;margin-top:.35em;padding-top:1.1em}",
-    ".si-group{float:left;width:20.6%;height:11.2em}",
+    ".si-group{float:left;width:30%;height:11.2em}",
     ".si-group+.si-group{margin-left:1.73%}",
-    ".si-group.si-engine{width:24.2%}",
-    ".si-group.si-wide{width:29.4%}",
+    ".si-group.si-wide{width:36.5%}",
     ".si-hint{margin-top:.5em;text-align:center;font-size:.64em;line-height:1.3em}",
     ".si-foot{overflow:hidden;margin-top:.7em}",
     ".si-foot .dbui-btn{float:left;width:48.5%;margin:0}",
@@ -162,11 +161,10 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     '<div class="si-play">'+button('PLAY','dbPlay()','','playBtn','dbui-btn-big')+'</div></div>',
     '<div class="si-switch" id="accountList" style="display:none"></div>',
     '<div class="msg dbui-msg" id="msg-signedin"></div>',
-    /* The engine Play starts, and for AIR its frame rate and display; the graphics quality for both. */
+    /* The engine Play starts, and for AIR its frame rate and display. */
     '<div class="si-groups" id="engineBox">',
-    group('ENGINE',choice('Smooth (AIR)','dbSetEngine(\'air\')','engineAir')+choice('Classic Flash','dbSetEngine(\'flash\')','engineFlash'),'si-engine'),
-    group('FRAME RATE',choice('100 fps','dbSetFps(100)','fps100')+choice('144 fps','dbSetFps(144)','fps144')+choice('240 fps','dbSetFps(240)','fps240')),
-    group('GRAPHICS',choice('High','dbSetQuality(\'high\')','qualityhigh')+choice('Medium','dbSetQuality(\'medium\')','qualitymedium')+choice('Low','dbSetQuality(\'low\')','qualitylow')),
+    group('ENGINE',choice('Smooth (AIR)','dbSetEngine(\'air\')','engineAir')+choice('Classic Flash','dbSetEngine(\'flash\')','engineFlash')),
+    group('FRAME RATE',choice('60 fps','dbSetFps(60)','fps60')+choice('100 fps','dbSetFps(100)','fps100')+choice('144 fps','dbSetFps(144)','fps144')+choice('240 fps','dbSetFps(240)','fps240')),
     group('DISPLAY',choice('Windowed full screen','dbSetScreen(\'borderless\')','screenBorderless')+choice('Full screen','dbSetScreen(\'full\')','screenFull')+choice('1600 x 900','dbSetScreen(\'1600x900\')','screen1600x900')+choice('1280 x 720','dbSetScreen(\'1280x720\')','screen1280x720'),'si-wide'),
     '</div>',
     '<div class="si-hint dbui-dim" id="engineHint"></div>',
@@ -324,33 +322,24 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
     a.disabled=!air; a.title=air?'Up to 240 fps':'The AIR engine is not installed; run the installer again';
     var opt='dbui-opt', lit=' dbui-on', dim=''; a.className=opt+(on?lit:dim); f.className=opt+(on?dim:lit);
     if(h) h.innerHTML=(air?'':'AIR is not installed here, so Play uses Classic Flash. ')+(on?'':'Classic Flash runs at up to 60 fps; the frame rate applies to AIR. ')+'The game itself is downloaded from the server at every start, so both engines run the latest version with every patch.';
-    showFps(on); showScreen(on); showQuality(); }
+    showFps(on); showScreen(on); }
   window.dbSetEngine=function(which){ if(which=='air'&&!hasAir()) return; saveEngine(which=='flash'?'flash':'air'); showEngine(); fitPanel(); };
 
   /* The frame rate the AIR engine aims for: 100 (the game's own target), 144 or 240, remembered in
      fps.txt and passed to the game as dbFps (FramePace.as takes 10-240). Flash Player 32 stops at 60,
-     so the buttons grey out with Classic Flash and Play passes nothing. */
+     so the buttons grey out with Classic Flash and Play passes nothing.
+     1.6.0: 60 for slower PCs (owner, 2026-11-17). A PC that cannot draw 100 frames a second gets them
+     unevenly; at 60 it has two thirds more time per frame, so frames come evenly. It replaces the
+     planned GRAPHICS choice: AIR 51.4 on Windows keeps the stage at HIGH whatever sets it (2026-11-17
+     bench, from the game and from the AIR app itself), and Flash's MEDIUM looks grainy scaled up. */
   var FPS_FILE=SESSION_DIR?SESSION_DIR+'\\fps.txt':null;
-  var FPS_CHOICES=[100,144,240];
+  var FPS_CHOICES=[60,100,144,240];
   function loadFps(){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(FPS_FILE&&fso.FileExists(FPS_FILE)){ var ts=fso.OpenTextFile(FPS_FILE,1,false); var v=parseInt(ts.ReadAll(),10); ts.Close(); for(var i=0;i<FPS_CHOICES.length;i++) if(FPS_CHOICES[i]==v) return v; } }catch(e){} return 100; }
   function saveFps(v){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!fso.FolderExists(SESSION_DIR)) fso.CreateFolder(SESSION_DIR); var ts=fso.CreateTextFile(FPS_FILE,true); ts.Write(String(v)); ts.Close(); }catch(e){} }
   function showFps(air){ var fps=loadFps(), opt='dbui-opt', lit=' dbui-on', dim='';
     for(var i=0;i<FPS_CHOICES.length;i++){ var b=$('fps'+FPS_CHOICES[i]); if(!b) continue;
-      b.disabled=!air; b.title=air?'':'For the AIR engine'; b.className=opt+(air&&FPS_CHOICES[i]==fps?lit:dim); } }
+      b.disabled=!air; b.title=!air?'For the AIR engine':(FPS_CHOICES[i]==60?'Steadier on slower PCs':''); b.className=opt+(air&&FPS_CHOICES[i]==fps?lit:dim); } }
   window.dbSetFps=function(v){ if(!useAir()) return; saveFps(v); showFps(true); };
-
-  /* 1.6.0: how smoothly the game draws its edges. High is the game's own setting; Medium and Low draw
-     edges with less smoothing, which costs a slower PC far less time per frame (the game draws on one
-     CPU core). Remembered in quality.txt and passed as dbQuality (FramePace.as applies low / medium /
-     high). Both engines read it; nothing is passed for High. */
-  var QUALITY_FILE=SESSION_DIR?SESSION_DIR+'\\quality.txt':null;
-  var QUALITY_CHOICES=['high','medium','low'];
-  function loadQuality(){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(QUALITY_FILE&&fso.FileExists(QUALITY_FILE)){ var ts=fso.OpenTextFile(QUALITY_FILE,1,false); var v=ts.ReadAll().replace(/\s+/g,'').toLowerCase(); ts.Close(); for(var i=0;i<QUALITY_CHOICES.length;i++) if(QUALITY_CHOICES[i]==v) return v; } }catch(e){} return 'high'; }
-  function saveQuality(v){ try{ var fso=new ActiveXObject('Scripting.FileSystemObject'); if(!fso.FolderExists(SESSION_DIR)) fso.CreateFolder(SESSION_DIR); var ts=fso.CreateTextFile(QUALITY_FILE,true); ts.Write(String(v)); ts.Close(); }catch(e){} }
-  function showQuality(){ var q=loadQuality(), opt='dbui-opt', lit=' dbui-on', dim='';
-    for(var i=0;i<QUALITY_CHOICES.length;i++){ var b=$('quality'+QUALITY_CHOICES[i]); if(!b) continue;
-      b.title=QUALITY_CHOICES[i]=='high'?'Smoothest edges':(QUALITY_CHOICES[i]=='medium'?'Faster on slower PCs':'Fastest; rougher edges'); b.className=opt+(QUALITY_CHOICES[i]==q?lit:dim); } }
-  window.dbSetQuality=function(v){ for(var i=0;i<QUALITY_CHOICES.length;i++) if(QUALITY_CHOICES[i]==v){ saveQuality(v); showQuality(); return; } };
 
   /* The display the AIR engine opens in: Windowed full screen (the default since 1.5.6; since 1.5.7 a
      maximised window with its title bar on screen, sent as dbScreen=maximized. 1.5.6 sent "borderless",
@@ -439,7 +428,6 @@ var BG="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAA
         registerGame(slot,'dbrevamped',r.email);
         if(useAir()&&loadFps()!=100) url+='&dbFps='+loadFps();
         if(useAir()&&loadScreen()!='full') url+='&dbScreen='+screenParam();
-        if(loadQuality()!='high') url+='&dbQuality='+loadQuality();
         relaunching=false;
         try{ new ActiveXObject('WScript.Shell').Run('"'+exe+'" "'+url+'"',1,false); setMsg('The game is opening - you are signed in.'); awaitingGame=true; }
         catch(e){ comeBack(); setMsg('Could not start the game: '+e.message,true); }
